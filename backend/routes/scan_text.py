@@ -1,0 +1,183 @@
+"""
+Text scanning API route for SafeType+.
+Analyzes text for PII, phishing patterns, and risk assessment.
+"""
+
+from flask import Blueprint, request, jsonify
+import logging
+from services.pii_regex import PIIRegexDetector
+from services.pii_ner import PIINERDetector
+from services.nlp_intent import NLPIntentClassifier
+from services.risk_engine import RiskEngine
+from services.suggestion_engine import SuggestionEngine
+from utils.highlighter import TextHighlighter
+from config import Config
+
+logger = logging.getLogger(__name__)
+
+# Create Blueprint
+text_bp = Blueprint('text_scan', __name__)
+
+# Initialize services (lazy loading handled in classes)
+pii_regex = PIIRegexDetector()
+pii_ner = PIINERDetector(Config.SPACY_MODEL)
+nlp_intent = NLPIntentClassifier(Config.NLP_MODEL)
+risk_engine = RiskEngine(Config())
+suggestion_engine = SuggestionEngine()
+highlighter = TextHighlighter()
+
+@text_bp.route('/text', methods=['POST'])
+def scan_text():
+    """
+    Scan text for PII, phishing patterns, and compute risk score.
+    
+    Request JSON:
+    {
+        "text": str (required),
+        "include_suggestions": bool (optional, default True),
+        "include_highlights": bool (optional, default True)
+    }
+    
+    Response JSON:
+    {
+        "risk_score": float,
+        "risk_level": str,
+        "module_breakdown": dict,
+        "reasons": list,
+        "detected_pii": list,
+        "intent_analysis": dict,
+        "highlighted_text": str (optional),
+        "highlights": list (optional),
+        "safer_suggestions": list (optional),
+        "metadata": dict
+    }
+    """
+    try:
+        # Validate request
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 400
+        
+        data = request.get_json()
+        
+        # Extract text
+        text = data.get('text', '').strip()
+        if not text:
+            return jsonify({"error": "Text field is required and cannot be empty"}), 400
+        
+        # Check text length limits
+        if len(text) > 10000:
+            return jsonify({"error": "Text exceeds maximum length of 10,000 characters"}), 400
+        
+        # Options
+        include_suggestions = data.get('include_suggestions', True)
+        include_highlights = data.get('include_highlights', True)
+        
+        logger.info(f"Scanning text ({len(text)} characters)")
+        
+        # Step 1: PII Detection (Regex)
+        regex_detections = pii_regex.detect_pii(text)
+        logger.debug(f"Regex detected {len(regex_detections)} PII items")
+        
+        # Step 2: PII Detection (NER)
+        ner_detections = pii_ner.detect_entities(text)
+        logger.debug(f"NER detected {len(ner_detections)} entities")
+        
+        # Step 3: Combine PII detections
+        all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
+        logger.debug(f"Combined total: {len(all_pii)} PII items")
+        
+        # Step 4: NLP Intent Classification
+        intent_probs = nlp_intent.classify_intent(text)
+        logger.debug(f"Intent classification: {intent_probs}")
+        
+        # Step 5: Detect phishing keywords
+        phishing_keywords = nlp_intent.detect_phishing_keywords(text)
+        
+        # Add phishing keywords to detections for highlighting
+        all_detections = all_pii + phishing_keywords
+        
+        # Step 6: Compute Risk Score
+        risk_assessment = risk_engine.compute_risk(
+            pii_detections=all_pii,
+            intent_probabilities=intent_probs,
+            text_length=len(text)
+        )
+        
+        # Step 7: Generate Highlights
+        highlights = []
+        highlighted_text = ""
+        if include_highlights:
+            highlights = highlighter.highlight_text(text, all_detections)
+            highlighted_text = highlighter.create_marked_text(text, highlights)
+        
+        # Step 8: Generate Suggestions
+        suggestions = []
+        if include_suggestions and risk_assessment['risk_level'] in ['Medium', 'High']:
+            suggestions = suggestion_engine.generate_suggestions(
+                text=text,
+                pii_detections=all_pii,
+                risk_level=risk_assessment['risk_level'],
+                reasons=risk_assessment['reasons']
+            )
+        
+        # Step 9: Build response
+        response = {
+            "risk_score": risk_assessment['risk_score'],
+            "risk_level": risk_assessment['risk_level'],
+            "confidence_interval": risk_assessment['confidence_interval'],
+            "module_breakdown": risk_assessment['module_breakdown'],
+            "reasons": risk_assessment['reasons'],
+            "detected_pii": [
+                {
+                    "type": d['type'],
+                    "value": d['value'][:50] + "..." if len(d['value']) > 50 else d['value'],
+                    "start": d['start'],
+                    "end": d['end'],
+                    "confidence": d.get('confidence', 0.0)
+                }
+                for d in all_pii
+            ],
+            "intent_analysis": {
+                "probabilities": intent_probs,
+                "manipulation_detected": nlp_intent.analyze_sentiment_manipulation(text)
+            },
+            "detection_summary": risk_assessment['detection_summary'],
+            "metadata": {
+                "text_length": len(text),
+                "total_detections": len(all_detections),
+                "pii_count": len(all_pii),
+                "phishing_keywords_count": len(phishing_keywords),
+                "processing_timestamp": _get_timestamp()
+            }
+        }
+        
+        # Add optional fields
+        if include_highlights:
+            response['highlights'] = highlights
+            response['highlighted_text'] = highlighted_text
+            response['explanation_tokens'] = highlighter.get_explanation_tokens(
+                text,
+                highlights
+            )
+        
+        if suggestions:
+            response['safer_suggestions'] = suggestions
+        
+        logger.info(
+            f"Scan complete: risk={risk_assessment['risk_level']}, "
+            f"score={risk_assessment['risk_score']:.3f}"
+        )
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        logger.error(f"Error scanning text: {e}", exc_info=True)
+        return jsonify({
+            "error": "Internal server error during text analysis",
+            "details": str(e) if Config.DEBUG else None
+        }), 500
+
+def _get_timestamp():
+    """Get current timestamp in ISO format."""
+    from datetime import datetime
+    return datetime.utcnow().isoformat() + 'Z'
