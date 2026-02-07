@@ -19,7 +19,25 @@ class Config:
     
     # Model paths and names
     NLP_MODEL = os.getenv('NLP_MODEL', 'distilbert-base-uncased-finetuned-sst-2-english')
+    MULTILINGUAL_NLP_MODEL = os.getenv(
+        'MULTILINGUAL_NLP_MODEL',
+        'cardiffnlp/twitter-xlm-roberta-base-sentiment'
+    )
     SPACY_MODEL = os.getenv('SPACY_MODEL', 'en_core_web_sm')
+    MULTILINGUAL_SPACY_MODEL = os.getenv('MULTILINGUAL_SPACY_MODEL', 'xx_ent_wiki_sm')
+
+    # Language detection
+    ENABLE_LANGUAGE_DETECTION = os.getenv('ENABLE_LANGUAGE_DETECTION', 'True').lower() == 'true'
+    DEFAULT_LANGUAGE = os.getenv('DEFAULT_LANGUAGE', 'en')
+    MIN_LANGUAGE_DETECT_CHARS = int(os.getenv('MIN_LANGUAGE_DETECT_CHARS', '20'))
+    
+    # Multilingual support (can be disabled to avoid large model downloads)
+    ENABLE_MULTILINGUAL = os.getenv('ENABLE_MULTILINGUAL', 'True').lower() == 'true'
+    MULTILINGUAL_NLP_MODEL = os.getenv(
+        'MULTILINGUAL_NLP_MODEL',
+        'cardiffnlp/twitter-xlm-roberta-base-sentiment'
+    ) if ENABLE_MULTILINGUAL else None
+    MULTILINGUAL_SPACY_MODEL = os.getenv('MULTILINGUAL_SPACY_MODEL', 'xx_ent_wiki_sm') if ENABLE_MULTILINGUAL else None
     
     # OCR configuration
     TESSERACT_PATH = os.getenv('TESSERACT_PATH', None)

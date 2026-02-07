@@ -89,7 +89,7 @@ safeType+/
 
 ### Prerequisites
 
-- Python 3.10+
+- **Python 3.10, 3.11, or 3.12** (⚠️ NOT 3.13+ due to spaCy compatibility)
 - Node.js 16+ and npm
 - Tesseract OCR (for image analysis)
 
@@ -101,9 +101,23 @@ cd backend
 ```
 
 2. **Create virtual environment**
+
+**Windows (if you have multiple Python versions):**
+```powershell
+py -3.10 -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+**Windows (single Python 3.10-3.12):**
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
+```
+
+**macOS/Linux:**
+```bash
+python3.10 -m venv venv
+source venv/bin/activate
 ```
 
 3. **Install dependencies**
@@ -111,9 +125,10 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-4. **Download spaCy model**
+4. **Download spaCy models**
 ```powershell
 python -m spacy download en_core_web_sm
+python -m spacy download xx_ent_wiki_sm
 ```
 
 5. **Install Tesseract OCR** (Windows)

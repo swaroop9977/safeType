@@ -37,38 +37,43 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 dark:from-slate-950 dark:via-cyan-950 dark:to-blue-900 transition-all">
       <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
         {/* Mode Selector */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+          <div className="inline-flex rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-1.5 shadow-lg border border-white/20 dark:border-white/10">
             <button
               onClick={() => setScanMode('text')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+              className={`px-8 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
                 scanMode === 'text'
-                  ? 'bg-primary text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              Scan Text
+              📝 Text Scanner
             </button>
             <button
               onClick={() => setScanMode('image')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
+              className={`px-8 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
                 scanMode === 'image'
-                  ? 'bg-primary text-white'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              Scan Image
+              🖼️ Image Scanner
             </button>
           </div>
         </div>
 
-        {/* Scanner Component */}
-        {scanMode === 'text' ? <TextScanner /> : <ImageScanner />}
+        {/* Scanner Components - Keep both mounted to preserve state */}
+        <div style={{ display: scanMode === 'text' ? 'block' : 'none' }}>
+          <TextScanner />
+        </div>
+        <div style={{ display: scanMode === 'image' ? 'block' : 'none' }}>
+          <ImageScanner />
+        </div>
       </main>
 
       <Footer />

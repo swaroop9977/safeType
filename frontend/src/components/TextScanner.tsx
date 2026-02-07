@@ -101,21 +101,21 @@ const TextScanner: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Input Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Enter Text to Analyze</h2>
-          <div className="flex space-x-2">
+      <div className="bg-gradient-to-br from-white/95 to-cyan-50/95 dark:from-slate-800/95 dark:to-cyan-900/95 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-cyan-200/50 dark:border-cyan-800/50">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">Enter Text</h2>
+          <div className="flex gap-2">
             <button
               onClick={() => loadExample('safe')}
-              className="px-3 py-1 text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800"
+              className="px-4 py-2 text-xs font-semibold bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/40 dark:to-teal-900/40 text-emerald-700 dark:text-emerald-300 rounded-xl hover:from-emerald-200 hover:to-teal-200 dark:hover:from-emerald-900/60 dark:hover:to-teal-900/60 transition-all shadow-sm"
             >
-              Load Safe Example
+              ✓ Safe Example
             </button>
             <button
               onClick={() => loadExample('risky')}
-              className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800"
+              className="px-4 py-2 text-xs font-semibold bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 text-red-700 dark:text-red-300 rounded-xl hover:from-red-200 hover:to-orange-200 dark:hover:from-red-900/60 dark:hover:to-orange-900/60 transition-all shadow-sm"
             >
-              Load Risky Example
+              ⚠ Risky Example
             </button>
           </div>
         </div>
@@ -123,26 +123,34 @@ const TextScanner: React.FC = () => {
         <textarea
           value={text}
           onChange={handleTextChange}
-          placeholder="Type or paste your text here... (Auto-scanning enabled)"
-          className="w-full h-48 p-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none placeholder-gray-400 dark:placeholder-gray-500"
+          placeholder="Type or paste your text here... (Auto-scanning enabled after typing pauses)"
+          className="w-full h-48 p-5 border-2 border-cyan-200/50 dark:border-cyan-800/50 bg-white dark:bg-slate-700/50 text-gray-900 dark:text-gray-100 rounded-2xl focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-500 transition-all"
         />
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {text.length} characters
-            {isScanning && <span className="ml-2 text-primary dark:text-blue-400">• Scanning...</span>}
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 font-medium">
+            <span>{text.length} characters</span>
+            {isScanning && (
+              <span className="flex items-center gap-2 text-teal-600 dark:text-teal-400 font-semibold">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Scanning...
+              </span>
+            )}
           </div>
-          <div className="space-x-2">
+          <div className="flex gap-3">
             <button
               onClick={handleClear}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+              className="px-6 py-2.5 rounded-xl border-2 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-teal-700 dark:text-teal-300 transition-all font-semibold hover:shadow-md"
             >
               Clear
             </button>
             <button
               onClick={handleManualScan}
               disabled={!text.trim() || isScanning}
-              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-lg hover:shadow-xl"
             >
               Scan Now
             </button>
@@ -152,9 +160,9 @@ const TextScanner: React.FC = () => {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-300">
-            <strong>Error:</strong> {error}
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-300 dark:border-red-800 rounded-2xl p-5">
+          <p className="text-red-800 dark:text-red-300 text-sm font-medium">
+            <strong>⚠️ Error:</strong> {error}
           </p>
         </div>
       )}
@@ -170,17 +178,19 @@ const TextScanner: React.FC = () => {
           />
 
           {/* Reasons */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Risk Analysis</h3>
-            <ul className="space-y-2">
-              {scanResult.reasons.map((reason, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-yellow-500 mr-2">⚠️</span>
-                  <span className="text-gray-700 dark:text-gray-300">{reason}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {scanResult.reasons && scanResult.reasons.length > 0 && (
+            <div className="bg-gradient-to-br from-white/95 to-cyan-50/95 dark:from-slate-800/95 dark:to-cyan-900/95 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-cyan-200/50 dark:border-cyan-800/50">
+              <h3 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6">Risk Analysis</h3>
+              <ul className="space-y-3">
+                {scanResult.reasons.map((reason, index) => (
+                  <li key={index} className="flex items-start gap-3 text-sm">
+                    <span className="text-orange-500 mt-1 text-lg">⚠</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Highlighted Text */}
           {scanResult.highlights && scanResult.highlights.length > 0 && (

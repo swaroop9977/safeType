@@ -5,7 +5,7 @@ Complete step-by-step guide to set up and run SafeType+.
 ## System Requirements
 
 - **OS**: Windows 10+, macOS 10.14+, or Linux
-- **Python**: 3.10 or higher
+- **Python**: 3.10, 3.11, or 3.12 ONLY (⚠️ 3.13+ NOT supported due to spaCy)
 - **Node.js**: 16.x or higher
 - **RAM**: 4GB minimum (8GB recommended)
 - **Disk**: 2GB free space for models and dependencies
@@ -22,9 +22,22 @@ cd d:\pilot\safeType+
 
 #### Step 2.1: Create Virtual Environment
 
+**Windows (check Python version first):**
 ```powershell
 cd backend
+python --version
+
+# If Python 3.10-3.12, use:
 python -m venv venv
+
+# If you have Python 3.13+ installed, use py launcher to select 3.10:
+py -3.10 -m venv venv
+```
+
+**macOS/Linux:**
+```bash
+cd backend
+python3.10 -m venv venv
 ```
 
 #### Step 2.2: Activate Virtual Environment
@@ -59,11 +72,14 @@ This will install:
 - OpenCV (image processing)
 - And all other dependencies
 
-#### Step 2.4: Download spaCy Model
+#### Step 2.4: Download spaCy Models
 
 ```powershell
 python -m spacy download en_core_web_sm
+python -m spacy download xx_ent_wiki_sm
 ```
+
+The multilingual model enables basic NER for non-English text.
 
 #### Step 2.5: Install Tesseract OCR
 

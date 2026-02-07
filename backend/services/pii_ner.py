@@ -14,7 +14,11 @@ class PIINERDetector:
     Complements regex-based detection with ML-powered entity recognition.
     """
     
-    def __init__(self, model_name: str = "en_core_web_sm"):
+    def __init__(
+        self,
+        model_name: str = "en_core_web_sm",
+        multilingual_model_name: str = None
+    ):
         """
         Initialize spaCy NER model.
         
@@ -22,11 +26,13 @@ class PIINERDetector:
             model_name: spaCy model to use (default: en_core_web_sm)
         """
         self.model_name = model_name
+        self.multilingual_model_name = multilingual_model_name
         self.nlp = None
-        self._load_model()
+        self.nlp_multi = None
+        self._load_models()
     
-    def _load_model(self):
-        """Load spaCy model lazily."""
+    def _load_models(self):
+        """Load spaCy models lazily."""
         try:
             import spacy
             self.nlp = spacy.load(self.model_name)
@@ -34,14 +40,48 @@ class PIINERDetector:
         except OSError:
             logger.warning(
                 f"spaCy model '{self.model_name}' not found. "
-                "Please run: python -m spacy download en_core_web_sm"
+                f"Please run: python -m spacy download {self.model_name}"
             )
+            self.nlp = None
+        except (TypeError, ValueError) as e:
+            # Python 3.14+ compatibility issue with spaCy
+            if "REGEX" in str(e) or "unable to infer type" in str(e):
+                logger.error(
+                    f"spaCy compatibility error (Python 3.14+): {e}\n"
+                    "Please use Python 3.11 or 3.12 for full spaCy support.\n"
+                    "NER detection will be disabled."
+                )
+            else:
+                logger.error(f"Error loading spaCy model: {e}")
             self.nlp = None
         except Exception as e:
             logger.error(f"Error loading spaCy model: {e}")
             self.nlp = None
+
+        if not self.multilingual_model_name:
+            return
+
+        try:
+            import spacy
+            self.nlp_multi = spacy.load(self.multilingual_model_name)
+            logger.info(f"Loaded spaCy model: {self.multilingual_model_name}")
+        except OSError:
+            logger.warning(
+                f"spaCy model '{self.multilingual_model_name}' not found. "
+                f"Please run: python -m spacy download {self.multilingual_model_name}"
+            )
+            self.nlp_multi = None
+        except Exception as e:
+            logger.error(f"Error loading spaCy model: {e}")
+            self.nlp_multi = None
+
+    def _select_nlp(self, language: str = "en"):
+        if language and language.lower().startswith("en"):
+            return self.nlp
+
+        return self.nlp_multi or self.nlp
     
-    def detect_entities(self, text: str) -> List[Dict]:
+    def detect_entities(self, text: str, language: str = "en") -> List[Dict]:
         """
         Detect named entities in text using spaCy NER.
         
@@ -59,7 +99,8 @@ class PIINERDetector:
                 "label": str (original spaCy label)
             }]
         """
-        if self.nlp is None:
+        nlp = self._select_nlp(language)
+        if nlp is None:
             logger.warning("spaCy model not available, skipping NER")
             return []
         
@@ -67,7 +108,7 @@ class PIINERDetector:
         
         try:
             # Process text with spaCy
-            doc = self.nlp(text)
+            doc = nlp(text)
             
             # Extract relevant entities
             for ent in doc.ents:
@@ -150,7 +191,7 @@ class PIINERDetector:
         
         return confidence
     
-    def detect_financial_entities(self, text: str) -> List[Dict]:
+    def detect_financial_entities(self, text: str, language: str = "en") -> List[Dict]:
         """
         Specialized detection for financial information.
         
@@ -160,13 +201,14 @@ class PIINERDetector:
         Returns:
             List of financial entity detections
         """
-        if self.nlp is None:
+        nlp = self._select_nlp(language)
+        if nlp is None:
             return []
         
         detections = []
         
         try:
-            doc = self.nlp(text)
+            doc = nlp(text)
             
             # Look for MONEY entities and context
             for ent in doc.ents:

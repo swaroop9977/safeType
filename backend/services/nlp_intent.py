@@ -15,7 +15,11 @@ class NLPIntentClassifier:
     Uses HuggingFace transformers with fallback to keyword-based detection.
     """
     
-    def __init__(self, model_name: str = "distilbert-base-uncased-finetuned-sst-2-english"):
+    def __init__(
+        self,
+        model_name: str = "distilbert-base-uncased-finetuned-sst-2-english",
+        multilingual_model_name: str = None
+    ):
         """
         Initialize intent classifier.
         
@@ -23,46 +27,184 @@ class NLPIntentClassifier:
             model_name: HuggingFace model name
         """
         self.model_name = model_name
-        self.classifier = None
-        self._load_model()
-        
-        # Phishing keyword patterns (fallback and enhancement)
-        self.urgency_keywords = [
-            r'\burgent\b', r'\bimmediate\b', r'\bact now\b', r'\bexpir(ing|ed)\b',
-            r'\bsuspend(ed)?\b', r'\blimited time\b', r'\bverify (now|immediately)\b',
-            r'\bconfirm your\b', r'\bupdate your\b', r'\bunusual activity\b'
-        ]
-        
-        self.reward_keywords = [
-            r'\bcongratulations\b', r'\bwinner\b', r'\bprize\b', r'\bfree\b',
-            r'\bclaim your\b', r'\breward\b', r'\bbonus\b', r'\bgift card\b'
-        ]
-        
-        self.authority_keywords = [
-            r'\bbank\b', r'\btax\b', r'\birs\b', r'\bgovernment\b',
-            r'\bpolice\b', r'\bcourt\b', r'\blegal action\b', r'\baccount suspended\b'
-        ]
-        
-        self.action_keywords = [
-            r'\bclick here\b', r'\bdownload\b', r'\bopen attachment\b',
-            r'\bprovide\b', r'\bsend us\b', r'\bshare your\b', r'\benter your\b'
-        ]
+        self.multilingual_model_name = multilingual_model_name
+        self.classifier_en = None
+        self.classifier_multi = None
+        self._load_models()
+
+        # Phishing keyword patterns by language (fallback and enhancement)
+        self.keyword_patterns = {
+            "en": {
+                "urgency": [
+                    r"\burgent\b", r"\bimmediate\b", r"\bact now\b",
+                    r"\bexpir(ing|ed)\b", r"\bsuspend(ed)?\b",
+                    r"\blimited time\b", r"\bverify (now|immediately)\b",
+                    r"\bconfirm your\b", r"\bupdate your\b", r"\bunusual activity\b"
+                ],
+                "reward": [
+                    r"\bcongratulations\b", r"\bwinner\b", r"\bprize\b",
+                    r"\bfree\b", r"\bclaim your\b", r"\breward\b",
+                    r"\bbonus\b", r"\bgift card\b"
+                ],
+                "authority": [
+                    r"\bbank\b", r"\btax\b", r"\birs\b", r"\bgovernment\b",
+                    r"\bpolice\b", r"\bcourt\b", r"\blegal action\b",
+                    r"\baccount suspended\b"
+                ],
+                "action": [
+                    r"\bclick here\b", r"\bdownload\b", r"\bopen attachment\b",
+                    r"\bprovide\b", r"\bsend us\b", r"\bshare your\b",
+                    r"\benter your\b"
+                ]
+            },
+            "es": {
+                "urgency": [
+                    r"\burgente\b", r"\binmediato\b", r"\bactua ahora\b",
+                    r"\bexpira\b", r"\bsuspendid[ao]\b", r"\bverifica\b",
+                    r"\bactualiza\b"
+                ],
+                "reward": [
+                    r"\bganador\b", r"\bpremio\b", r"\bgratis\b",
+                    r"\bbono\b", r"\bregalo\b"
+                ],
+                "authority": [
+                    r"\bbanco\b", r"\bgobierno\b", r"\bpolicia\b",
+                    r"\bimpuestos\b", r"\bcuenta suspendida\b"
+                ],
+                "action": [
+                    r"\bhaz clic\b", r"\bdescarga\b", r"\babre el adjunto\b",
+                    r"\bproporciona\b", r"\bcomparte\b", r"\bingresa\b"
+                ]
+            },
+            "fr": {
+                "urgency": [
+                    r"\burgent\b", r"\bimmediat\w*\b", r"\bagissez maintenant\b",
+                    r"\bexpire\b", r"\bsuspendu\b", r"\bverifiez\b",
+                    r"\bconfirmez\b", r"\bmettez a jour\b"
+                ],
+                "reward": [
+                    r"\bfelicitations\b", r"\bgagnant\b", r"\bprix\b",
+                    r"\bgratuit\b", r"\brecompense\b", r"\bcadeau\b"
+                ],
+                "authority": [
+                    r"\bbanque\b", r"\bimpots\b", r"\bgouvernement\b",
+                    r"\bpolice\b", r"\bcompte suspendu\b"
+                ],
+                "action": [
+                    r"\bcliquez ici\b", r"\btelechargez\b",
+                    r"\bouvrez la piece jointe\b", r"\bfournissez\b",
+                    r"\bpartagez\b", r"\bsaisissez\b"
+                ]
+            },
+            "de": {
+                "urgency": [
+                    r"\bdringend\b", r"\bsofort\b", r"\bjetzt handeln\b",
+                    r"\bablauf\b", r"\bgesperrt\b", r"\bbestaetigen\b",
+                    r"\baktualisieren\b"
+                ],
+                "reward": [
+                    r"\bglueckwunsch\b", r"\bgewinner\b", r"\bpreis\b",
+                    r"\bgratis\b", r"\bbonus\b", r"\bgutschein\b"
+                ],
+                "authority": [
+                    r"\bbank\b", r"\bfinanzamt\b", r"\bregierung\b",
+                    r"\bpolizei\b", r"\bkonto gesperrt\b"
+                ],
+                "action": [
+                    r"\bhier klicken\b", r"\bherunterladen\b",
+                    r"\banhang oeffnen\b", r"\bgeben sie\b",
+                    r"\bteilen sie\b", r"\beingeben\b"
+                ]
+            },
+            "pt": {
+                "urgency": [
+                    r"\burgente\b", r"\bimediato\b", r"\baja agora\b",
+                    r"\bexpira\b", r"\bsuspenso\b", r"\bverifique\b",
+                    r"\batualize\b"
+                ],
+                "reward": [
+                    r"\bparabens\b", r"\bganhador\b", r"\bpremio\b",
+                    r"\bgratis\b", r"\bbonus\b", r"\bcartao presente\b"
+                ],
+                "authority": [
+                    r"\bbanco\b", r"\bimposto\b", r"\bgoverno\b",
+                    r"\bpolicia\b", r"\bconta suspensa\b"
+                ],
+                "action": [
+                    r"\bclique aqui\b", r"\bbaixar\b",
+                    r"\babra o anexo\b", r"\bforneca\b",
+                    r"\bcompartilhe\b", r"\bdigite\b"
+                ]
+            },
+            "it": {
+                "urgency": [
+                    r"\burgente\b", r"\bimmediato\b", r"\bagisci ora\b",
+                    r"\bscade\b", r"\bsospeso\b", r"\bverifica\b",
+                    r"\baggiorna\b"
+                ],
+                "reward": [
+                    r"\bcongratulazioni\b", r"\bvincitore\b", r"\bpremio\b",
+                    r"\bgratis\b", r"\bbonus\b", r"\bbuono regalo\b"
+                ],
+                "authority": [
+                    r"\bbanca\b", r"\btasse\b", r"\bgoverno\b",
+                    r"\bpolizia\b", r"\baccount sospeso\b"
+                ],
+                "action": [
+                    r"\bclicca qui\b", r"\bscarica\b",
+                    r"\bapri allegato\b", r"\bfornisci\b",
+                    r"\bcondividi\b", r"\binserisci\b"
+                ]
+            }
+        }
     
-    def _load_model(self):
-        """Load HuggingFace transformer model."""
+    def _load_models(self):
+        """Load HuggingFace transformer models."""
         try:
             from transformers import pipeline
-            self.classifier = pipeline(
+            self.classifier_en = pipeline(
                 "text-classification",
                 model=self.model_name,
                 device=-1  # CPU
             )
             logger.info(f"Loaded transformer model: {self.model_name}")
         except Exception as e:
-            logger.warning(f"Could not load transformer model: {e}. Using keyword fallback.")
-            self.classifier = None
+            logger.warning(
+                f"Could not load transformer model: {e}. Using keyword fallback."
+            )
+            self.classifier_en = None
+
+        if not self.multilingual_model_name:
+            return
+
+        try:
+            from transformers import pipeline
+            self.classifier_multi = pipeline(
+                "text-classification",
+                model=self.multilingual_model_name,
+                device=-1  # CPU
+            )
+            logger.info(f"Loaded transformer model: {self.multilingual_model_name}")
+        except Exception as e:
+            logger.warning(
+                f"Could not load multilingual model: {e}. Using English model."
+            )
+            self.classifier_multi = None
+
+    def _normalize_language(self, language: str) -> str:
+        if not language:
+            return "en"
+
+        return language.strip().lower().split("-")[0]
+
+    def _get_classifier(self, language: str):
+        lang = self._normalize_language(language)
+        if lang == "en":
+            return self.classifier_en
+
+        return self.classifier_multi or self.classifier_en
     
-    def classify_intent(self, text: str) -> Dict[str, float]:
+    def classify_intent(self, text: str, language: str = "en") -> Dict[str, float]:
         """
         Classify text intent with probability scores.
         
@@ -82,17 +224,17 @@ class NLPIntentClassifier:
             return {"benign": 1.0}
         
         # Get transformer predictions
-        transformer_probs = self._get_transformer_predictions(text)
+        transformer_probs = self._get_transformer_predictions(text, language)
         
         # Get keyword-based scores
-        keyword_scores = self._get_keyword_scores(text)
+        keyword_scores = self._get_keyword_scores(text, language)
         
         # Combine both approaches
         combined_scores = self._combine_scores(transformer_probs, keyword_scores)
         
         return combined_scores
     
-    def _get_transformer_predictions(self, text: str) -> Dict[str, float]:
+    def _get_transformer_predictions(self, text: str, language: str) -> Dict[str, float]:
         """
         Get predictions from transformer model.
         
@@ -102,7 +244,8 @@ class NLPIntentClassifier:
         Returns:
             Dict of class probabilities
         """
-        if self.classifier is None:
+        classifier = self._get_classifier(language)
+        if classifier is None:
             return {}
         
         try:
@@ -110,21 +253,15 @@ class NLPIntentClassifier:
             max_length = 500
             truncated_text = text[:max_length] if len(text) > max_length else text
             
-            results = self.classifier(truncated_text, top_k=2)
+            results = classifier(truncated_text, top_k=3)
             
             # Convert to our format
             probs = {}
             for result in results:
-                label = result['label']
-                score = result['score']
-                
-                # Map sentiment labels to intent
-                # Negative sentiment can indicate suspicious content
-                # Positive sentiment can indicate manipulation (fake rewards)
-                if label in ['NEGATIVE', 'LABEL_0']:
-                    probs['suspicious'] = score
-                elif label in ['POSITIVE', 'LABEL_1']:
-                    probs['benign'] = score
+                intent = self._map_transformer_label(result.get('label'))
+                score = result.get('score', 0.0)
+                if intent:
+                    probs[intent] = max(probs.get(intent, 0.0), score)
             
             return probs
         
@@ -132,7 +269,7 @@ class NLPIntentClassifier:
             logger.error(f"Error in transformer prediction: {e}")
             return {}
     
-    def _get_keyword_scores(self, text: str) -> Dict[str, float]:
+    def _get_keyword_scores(self, text: str, language: str) -> Dict[str, float]:
         """
         Compute intent scores based on keyword patterns.
         
@@ -144,24 +281,26 @@ class NLPIntentClassifier:
         """
         text_lower = text.lower()
         
+        patterns = self._get_language_patterns(language)
+
         # Count matches for each category
         urgency_count = sum(
-            1 for pattern in self.urgency_keywords
+            1 for pattern in patterns["urgency"]
             if re.search(pattern, text_lower)
         )
-        
+
         reward_count = sum(
-            1 for pattern in self.reward_keywords
+            1 for pattern in patterns["reward"]
             if re.search(pattern, text_lower)
         )
-        
+
         authority_count = sum(
-            1 for pattern in self.authority_keywords
+            1 for pattern in patterns["authority"]
             if re.search(pattern, text_lower)
         )
-        
+
         action_count = sum(
-            1 for pattern in self.action_keywords
+            1 for pattern in patterns["action"]
             if re.search(pattern, text_lower)
         )
         
@@ -247,7 +386,7 @@ class NLPIntentClassifier:
         
         return combined
     
-    def detect_phishing_keywords(self, text: str) -> List[Dict]:
+    def detect_phishing_keywords(self, text: str, language: str = "en") -> List[Dict]:
         """
         Detect specific phishing keywords and their positions.
         
@@ -260,11 +399,12 @@ class NLPIntentClassifier:
         detections = []
         text_lower = text.lower()
         
+        patterns = self._get_language_patterns(language)
         all_patterns = (
-            self.urgency_keywords +
-            self.reward_keywords +
-            self.authority_keywords +
-            self.action_keywords
+            patterns["urgency"] +
+            patterns["reward"] +
+            patterns["authority"] +
+            patterns["action"]
         )
         
         for pattern in all_patterns:
@@ -279,7 +419,7 @@ class NLPIntentClassifier:
         
         return detections
     
-    def analyze_sentiment_manipulation(self, text: str) -> Dict:
+    def analyze_sentiment_manipulation(self, text: str, language: str = "en") -> Dict:
         """
         Analyze text for emotional manipulation tactics.
         
@@ -299,17 +439,19 @@ class NLPIntentClassifier:
         
         text_lower = text.lower()
         
+        patterns = self._get_language_patterns(language)
+
         # Check for manipulation tactics
-        if any(re.search(p, text_lower) for p in self.urgency_keywords):
+        if any(re.search(p, text_lower) for p in patterns["urgency"]):
             analysis["uses_urgency"] = True
             analysis["manipulation_score"] += 0.3
-        
-        if any(re.search(p, text_lower) for p in self.authority_keywords):
+
+        if any(re.search(p, text_lower) for p in patterns["authority"]):
             analysis["uses_authority"] = True
             analysis["uses_fear"] = True
             analysis["manipulation_score"] += 0.35
-        
-        if any(re.search(p, text_lower) for p in self.reward_keywords):
+
+        if any(re.search(p, text_lower) for p in patterns["reward"]):
             analysis["uses_greed"] = True
             analysis["manipulation_score"] += 0.25
         
@@ -317,3 +459,24 @@ class NLPIntentClassifier:
         analysis["manipulation_score"] = min(1.0, analysis["manipulation_score"])
         
         return analysis
+
+    def _map_transformer_label(self, label: str) -> str:
+        if not label:
+            return ""
+
+        label_upper = str(label).upper()
+        if label_upper in ["NEGATIVE", "LABEL_0"]:
+            return "suspicious"
+        if label_upper in ["POSITIVE", "LABEL_1"]:
+            return "benign"
+        if label_upper in ["NEUTRAL", "LABEL_2"]:
+            return "benign"
+
+        return ""
+
+    def _get_language_patterns(self, language: str) -> Dict[str, List[str]]:
+        lang = self._normalize_language(language)
+        if lang in self.keyword_patterns:
+            return self.keyword_patterns[lang]
+
+        return self.keyword_patterns["en"]

@@ -8,6 +8,7 @@ import logging
 from services.pii_regex import PIIRegexDetector
 from services.pii_ner import PIINERDetector
 from services.nlp_intent import NLPIntentClassifier
+from services.language_detection import LanguageDetector
 from services.risk_engine import RiskEngine
 from services.suggestion_engine import SuggestionEngine
 from utils.highlighter import TextHighlighter
@@ -20,8 +21,18 @@ text_bp = Blueprint('text_scan', __name__)
 
 # Initialize services (lazy loading handled in classes)
 pii_regex = PIIRegexDetector()
-pii_ner = PIINERDetector(Config.SPACY_MODEL)
-nlp_intent = NLPIntentClassifier(Config.NLP_MODEL)
+pii_ner = PIINERDetector(
+    Config.SPACY_MODEL,
+    Config.MULTILINGUAL_SPACY_MODEL
+)
+nlp_intent = NLPIntentClassifier(
+    Config.NLP_MODEL,
+    Config.MULTILINGUAL_NLP_MODEL
+)
+language_detector = LanguageDetector(
+    default_language=Config.DEFAULT_LANGUAGE,
+    min_chars=Config.MIN_LANGUAGE_DETECT_CHARS
+)
 risk_engine = RiskEngine(Config())
 suggestion_engine = SuggestionEngine()
 highlighter = TextHighlighter()
@@ -74,43 +85,54 @@ def scan_text():
         
         logger.info(f"Scanning text ({len(text)} characters)")
         
-        # Step 1: PII Detection (Regex)
+        # Step 1: Language Detection
+        language_info = {
+            "language": Config.DEFAULT_LANGUAGE,
+            "confidence": 0.0,
+            "reliable": False,
+            "reason": "disabled"
+        }
+        if Config.ENABLE_LANGUAGE_DETECTION:
+            language_info = language_detector.detect_language(text)
+        detected_language = language_info["language"]
+
+        # Step 2: PII Detection (Regex)
         regex_detections = pii_regex.detect_pii(text)
         logger.debug(f"Regex detected {len(regex_detections)} PII items")
         
-        # Step 2: PII Detection (NER)
-        ner_detections = pii_ner.detect_entities(text)
+        # Step 3: PII Detection (NER)
+        ner_detections = pii_ner.detect_entities(text, detected_language)
         logger.debug(f"NER detected {len(ner_detections)} entities")
         
-        # Step 3: Combine PII detections
+        # Step 4: Combine PII detections
         all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
         logger.debug(f"Combined total: {len(all_pii)} PII items")
         
-        # Step 4: NLP Intent Classification
-        intent_probs = nlp_intent.classify_intent(text)
+        # Step 5: NLP Intent Classification
+        intent_probs = nlp_intent.classify_intent(text, detected_language)
         logger.debug(f"Intent classification: {intent_probs}")
         
-        # Step 5: Detect phishing keywords
-        phishing_keywords = nlp_intent.detect_phishing_keywords(text)
+        # Step 6: Detect phishing keywords
+        phishing_keywords = nlp_intent.detect_phishing_keywords(text, detected_language)
         
         # Add phishing keywords to detections for highlighting
         all_detections = all_pii + phishing_keywords
         
-        # Step 6: Compute Risk Score
+        # Step 7: Compute Risk Score
         risk_assessment = risk_engine.compute_risk(
             pii_detections=all_pii,
             intent_probabilities=intent_probs,
             text_length=len(text)
         )
         
-        # Step 7: Generate Highlights
+        # Step 8: Generate Highlights
         highlights = []
         highlighted_text = ""
         if include_highlights:
             highlights = highlighter.highlight_text(text, all_detections)
             highlighted_text = highlighter.create_marked_text(text, highlights)
         
-        # Step 8: Generate Suggestions
+        # Step 9: Generate Suggestions
         suggestions = []
         if include_suggestions and risk_assessment['risk_level'] in ['Medium', 'High']:
             suggestions = suggestion_engine.generate_suggestions(
@@ -120,7 +142,7 @@ def scan_text():
                 reasons=risk_assessment['reasons']
             )
         
-        # Step 9: Build response
+        # Step 10: Build response
         response = {
             "risk_score": risk_assessment['risk_score'],
             "risk_level": risk_assessment['risk_level'],
@@ -139,7 +161,10 @@ def scan_text():
             ],
             "intent_analysis": {
                 "probabilities": intent_probs,
-                "manipulation_detected": nlp_intent.analyze_sentiment_manipulation(text)
+                "manipulation_detected": nlp_intent.analyze_sentiment_manipulation(
+                    text,
+                    detected_language
+                )
             },
             "detection_summary": risk_assessment['detection_summary'],
             "metadata": {
@@ -147,6 +172,7 @@ def scan_text():
                 "total_detections": len(all_detections),
                 "pii_count": len(all_pii),
                 "phishing_keywords_count": len(phishing_keywords),
+                "language": language_info,
                 "processing_timestamp": _get_timestamp()
             }
         }

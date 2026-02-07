@@ -5,8 +5,11 @@ Get SafeType+ running in under 10 minutes!
 ## Prerequisites Check
 
 ```powershell
-# Check Python (need 3.10+)
+# Check Python (need 3.10-3.12, NOT 3.13+)
 python --version
+
+# On Windows, check all installed versions
+py -0
 
 # Check Node.js (need 16+)
 node --version
@@ -27,14 +30,21 @@ If any are missing, install from:
 cd d:\pilot\safeType+\backend
 
 # Create and activate virtual environment
+# If you have Python 3.10-3.12, use:
 python -m venv venv
+
+# If you have multiple versions, specify 3.10:
+py -3.10 -m venv venv
+
+# Activate
 .\venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Download spaCy model
+# Download spaCy models
 python -m spacy download en_core_web_sm
+python -m spacy download xx_ent_wiki_sm
 
 # Create config file
 cp .env.example .env

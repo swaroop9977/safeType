@@ -9,6 +9,7 @@ from services.ocr_service import OCRService
 from services.pii_regex import PIIRegexDetector
 from services.pii_ner import PIINERDetector
 from services.nlp_intent import NLPIntentClassifier
+from services.language_detection import LanguageDetector
 from services.risk_engine import RiskEngine
 from services.suggestion_engine import SuggestionEngine
 from utils.highlighter import TextHighlighter
@@ -22,8 +23,18 @@ image_bp = Blueprint('image_scan', __name__)
 # Initialize services
 ocr_service = OCRService(Config.TESSERACT_PATH)
 pii_regex = PIIRegexDetector()
-pii_ner = PIINERDetector(Config.SPACY_MODEL)
-nlp_intent = NLPIntentClassifier(Config.NLP_MODEL)
+pii_ner = PIINERDetector(
+    Config.SPACY_MODEL,
+    Config.MULTILINGUAL_SPACY_MODEL
+)
+nlp_intent = NLPIntentClassifier(
+    Config.NLP_MODEL,
+    Config.MULTILINGUAL_NLP_MODEL
+)
+language_detector = LanguageDetector(
+    default_language=Config.DEFAULT_LANGUAGE,
+    min_chars=Config.MIN_LANGUAGE_DETECT_CHARS
+)
 risk_engine = RiskEngine(Config())
 suggestion_engine = SuggestionEngine()
 highlighter = TextHighlighter()
@@ -116,18 +127,32 @@ def scan_image():
                 }
             }), 200
         
-        # Step 2: PII Detection on extracted text
+        # Step 2: Language Detection
+        language_info = {
+            "language": Config.DEFAULT_LANGUAGE,
+            "confidence": 0.0,
+            "reliable": False,
+            "reason": "disabled"
+        }
+        if Config.ENABLE_LANGUAGE_DETECTION:
+            language_info = language_detector.detect_language(extracted_text)
+        detected_language = language_info["language"]
+
+        # Step 3: PII Detection on extracted text
         regex_detections = pii_regex.detect_pii(extracted_text)
-        ner_detections = pii_ner.detect_entities(extracted_text)
+        ner_detections = pii_ner.detect_entities(extracted_text, detected_language)
         all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
         
         logger.debug(f"Detected {len(all_pii)} PII items in image text")
         
-        # Step 3: NLP Intent Classification
-        intent_probs = nlp_intent.classify_intent(extracted_text)
-        phishing_keywords = nlp_intent.detect_phishing_keywords(extracted_text)
+        # Step 4: NLP Intent Classification
+        intent_probs = nlp_intent.classify_intent(extracted_text, detected_language)
+        phishing_keywords = nlp_intent.detect_phishing_keywords(
+            extracted_text,
+            detected_language
+        )
         
-        # Step 4: Compute Risk Score (with OCR component)
+        # Step 5: Compute Risk Score (with OCR component)
         ocr_data_for_risk = {
             'confidence': ocr_confidence,
             'pii_count': len(all_pii),
@@ -141,12 +166,12 @@ def scan_image():
             ocr_data=ocr_data_for_risk
         )
         
-        # Step 5: Generate Highlights for extracted text
+        # Step 6: Generate Highlights for extracted text
         all_detections = all_pii + phishing_keywords
         highlights = highlighter.highlight_text(extracted_text, all_detections)
         highlighted_text = highlighter.create_marked_text(extracted_text, highlights)
         
-        # Step 6: Generate Suggestions
+        # Step 7: Generate Suggestions
         suggestions = []
         if risk_assessment['risk_level'] in ['Medium', 'High']:
             suggestions = suggestion_engine.generate_suggestions(
@@ -156,7 +181,7 @@ def scan_image():
                 reasons=risk_assessment['reasons']
             )
         
-        # Step 7: Build response
+        # Step 8: Build response
         response = {
             "risk_score": risk_assessment['risk_score'],
             "risk_level": risk_assessment['risk_level'],
@@ -181,7 +206,10 @@ def scan_image():
             ],
             "intent_analysis": {
                 "probabilities": intent_probs,
-                "manipulation_detected": nlp_intent.analyze_sentiment_manipulation(extracted_text)
+                "manipulation_detected": nlp_intent.analyze_sentiment_manipulation(
+                    extracted_text,
+                    detected_language
+                )
             },
             "highlights": highlights,
             "detection_summary": risk_assessment['detection_summary'],
@@ -190,6 +218,7 @@ def scan_image():
                 "image_type": ocr_service.detect_image_type(image_data),
                 "extracted_text_length": len(extracted_text),
                 "total_detections": len(all_detections),
+                "language": language_info,
                 "processing_timestamp": _get_timestamp()
             }
         }

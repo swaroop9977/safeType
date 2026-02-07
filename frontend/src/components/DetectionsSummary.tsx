@@ -52,82 +52,77 @@ const DetectionsSummary: React.FC<DetectionsSummaryProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Detection Details</h3>
+    <div className="bg-gradient-to-br from-white/95 to-cyan-50/95 dark:from-slate-800/95 dark:to-cyan-900/95 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-cyan-200/50 dark:border-cyan-800/50">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">Detection Details</h3>
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="text-sm text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+          className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 uppercase tracking-wider transition-colors"
         >
-          {showDetails ? 'Hide Details' : 'Show Details'}
+          {showDetails ? 'Hide' : 'Show All'}
         </button>
       </div>
 
       {/* PII Summary */}
-      <div className="mb-4">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <div className="mb-8">
+        <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase tracking-wider">
           Detected PII ({detectedPII.length})
         </h4>
         {detectedPII.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {detectedPII.slice(0, showDetails ? undefined : 3).map((pii, index) => {
               const confidenceBadge = getConfidenceBadge(pii.confidence);
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600"
+                  className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-100/50 to-cyan-100/50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-2xl hover:shadow-lg transition-all border border-teal-200/50 dark:border-teal-800/50"
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xl">{getPIIIcon(pii.type)}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{getPIIIcon(pii.type)}</span>
                     <div>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200 block">
                         {pii.type.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{pii.value}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">{pii.value}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${confidenceBadge.color}`}>
-                      {Math.round(pii.confidence * 100)}%
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${confidenceBadge.color}`} title="Detection confidence level">
-                      {confidenceBadge.label}
-                    </span>
-                  </div>
+                  <span className={`px-3 py-1.5 text-xs font-bold rounded-lg ${confidenceBadge.color}`}>
+                    {Math.round(pii.confidence * 100)}%
+                  </span>
                 </div>
               );
             })}
             {!showDetails && detectedPII.length > 3 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+              <p className="text-xs text-gray-600 dark:text-gray-400 text-center pt-2 font-medium">
                 +{detectedPII.length - 3} more...
               </p>
             )}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400 italic">No PII detected</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 italic">No PII detected</p>
         )}
       </div>
 
       {/* Intent Analysis */}
       {showDetails && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Intent Analysis</h4>
-          <div className="space-y-2">
+          <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase tracking-wider">Intent Analysis</h4>
+          <div className="space-y-3">
             {Object.entries(intentAnalysis.probabilities)
               .sort(([, a], [, b]) => (b as number) - (a as number))
               .map(([intent, probability]) => (
                 <div key={intent} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 font-medium capitalize">
                     {intent.replace('_', ' ')}
                   </span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-24 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="w-28 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
                       <div
-                        className="h-full bg-primary"
+                        className="h-full bg-gradient-to-r from-teal-400 to-cyan-400"
                         style={{ width: `${(probability as number) * 100}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium text-gray-700 w-12 text-right">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 w-10 text-right">
                       {Math.round((probability as number) * 100)}%
                     </span>
                   </div>
@@ -137,22 +132,22 @@ const DetectionsSummary: React.FC<DetectionsSummaryProps> = ({
 
           {/* Manipulation Detection */}
           {intentAnalysis.manipulation_detected && (
-            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded">
-              <p className="text-sm font-semibold text-orange-800 mb-1">
-                Manipulation Tactics Detected
+            <div className="mt-6 p-4 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 border-2 border-orange-300 dark:border-orange-800 rounded-2xl">
+              <p className="text-sm font-bold text-orange-800 dark:text-orange-400 mb-3">
+                ⚠ Manipulation Tactics Detected
               </p>
-              <ul className="text-xs text-orange-700 space-y-1">
+              <ul className="text-xs text-orange-700 dark:text-orange-300 space-y-1.5 font-medium">
                 {intentAnalysis.manipulation_detected.uses_urgency && (
-                  <li>• Urgency pressure</li>
+                  <li>🔥 Urgency pressure</li>
                 )}
                 {intentAnalysis.manipulation_detected.uses_fear && (
-                  <li>• Fear-based language</li>
+                  <li>😰 Fear-based language</li>
                 )}
                 {intentAnalysis.manipulation_detected.uses_greed && (
-                  <li>• Reward/greed appeal</li>
+                  <li>💰 Reward/greed appeal</li>
                 )}
                 {intentAnalysis.manipulation_detected.uses_authority && (
-                  <li>• False authority</li>
+                  <li>👑 False authority</li>
                 )}
               </ul>
             </div>

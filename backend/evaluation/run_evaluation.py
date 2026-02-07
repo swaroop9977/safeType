@@ -74,10 +74,10 @@ def evaluate_system(dataset_path: str, output_report: str = None):
         try:
             # Run detection pipeline
             regex_detections = pii_regex.detect_pii(text)
-            ner_detections = pii_ner.detect_entities(text)
+            ner_detections = pii_ner.detect_entities(text, "en")
             all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
             
-            intent_probs = nlp_intent.classify_intent(text)
+            intent_probs = nlp_intent.classify_intent(text, "en")
             
             risk_assessment = risk_engine.compute_risk(
                 pii_detections=all_pii,

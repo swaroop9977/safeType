@@ -1,5 +1,5 @@
 # SafeType+ Backend Dependencies
-# Python 3.10+
+# Python 3.10 - 3.12 (Python 3.14+ has spaCy compatibility issues)
 
 # Web Framework
 Flask==3.0.0
@@ -8,8 +8,7 @@ Werkzeug==3.0.1
 
 # NLP and ML
 transformers==4.36.0
-# Torch pinned to latest available for Python 3.14
-torch==2.10.0
+torch>=2.0.0,<3.0.0
 spacy==3.7.2
 scikit-learn==1.3.2
 
@@ -25,6 +24,7 @@ pandas==2.1.4
 # Utilities
 python-dotenv==1.0.0
 requests==2.31.0
+langdetect==1.0.9
 
 # Testing and Development
 pytest==7.4.3

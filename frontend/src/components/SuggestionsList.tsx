@@ -31,25 +31,25 @@ const SuggestionsList: React.FC<SuggestionsListProps> = ({ suggestions }) => {
   const getTypeColor = (type: string): string => {
     switch (type) {
       case 'redacted':
-        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
+        return 'bg-blue-50 dark:bg-blue-900/20';
       case 'rewritten':
-        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+        return 'bg-emerald-50 dark:bg-emerald-900/20';
       case 'guidance':
-        return 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800';
+        return 'bg-purple-50 dark:bg-purple-900/20';
       case 'template':
-        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+        return 'bg-amber-50 dark:bg-amber-900/20';
       default:
-        return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+        return 'bg-gray-50 dark:bg-gray-800';
     }
   };
 
   const getConfidenceBadge = (confidence: number): string => {
     if (confidence >= 0.9) {
-      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700';
+      return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
     } else if (confidence >= 0.7) {
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700';
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
     } else {
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700';
+      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
     }
   };
 
@@ -64,10 +64,10 @@ const SuggestionsList: React.FC<SuggestionsListProps> = ({ suggestions }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Safer Alternatives</h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+    <div className="bg-gradient-to-br from-white/95 to-cyan-50/95 dark:from-slate-800/95 dark:to-cyan-900/95 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-cyan-200/50 dark:border-cyan-800/50">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">Safer Alternatives</h3>
+        <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider bg-cyan-100/50 dark:bg-cyan-900/30 px-3 py-1.5 rounded-lg">
           {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -76,34 +76,34 @@ const SuggestionsList: React.FC<SuggestionsListProps> = ({ suggestions }) => {
         {suggestions.map((suggestion, index) => (
           <div
             key={index}
-            className={`border rounded-lg p-4 ${getTypeColor(suggestion.type)}`}
+            className={`rounded-2xl p-5 ${getTypeColor(suggestion.type)} border-2 border-opacity-40 transition-all hover:shadow-lg hover:scale-102`}
           >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center">
-                <span className="text-2xl mr-2">{getTypeIcon(suggestion.type)}</span>
-                <span className="font-medium text-gray-700 dark:text-gray-200 capitalize">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getTypeIcon(suggestion.type)}</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200 capitalize text-sm uppercase tracking-wider">
                   {suggestion.type}
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getConfidenceBadge(suggestion.confidence)}`}>
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 text-xs font-bold rounded-lg ${getConfidenceBadge(suggestion.confidence)}`}>
                   {Math.round(suggestion.confidence * 100)}%
                 </span>
                 <button
                   onClick={() => handleCopy(suggestion.text, index)}
-                  className="text-sm text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-bold transition-colors uppercase tracking-wide"
                 >
                   {copiedIndex === index ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
             </div>
 
-            <p className="text-gray-800 dark:text-gray-200 mb-2 bg-white dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+            <p className="text-gray-800 dark:text-gray-200 mb-3 bg-white/80 dark:bg-slate-700/60 p-4 rounded-xl text-sm leading-relaxed font-medium border-l-4 border-teal-500">
               {suggestion.text}
             </p>
 
-            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-              {suggestion.explanation}
+            <p className="text-xs text-gray-700 dark:text-gray-400 italic font-medium">
+              💡 {suggestion.explanation}
             </p>
           </div>
         ))}
