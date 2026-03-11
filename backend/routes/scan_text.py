@@ -12,6 +12,8 @@ from services.language_detection import LanguageDetector
 from services.risk_engine import RiskEngine
 from services.suggestion_engine import SuggestionEngine
 from utils.highlighter import TextHighlighter
+from middleware.auth import require_api_key
+from middleware.limiter import limiter
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,8 @@ suggestion_engine = SuggestionEngine()
 highlighter = TextHighlighter()
 
 @text_bp.route('/text', methods=['POST'])
+@require_api_key
+@limiter.limit(lambda: f"{Config.RATE_LIMIT} per minute")
 def scan_text():
     """
     Scan text for PII, phishing patterns, and compute risk score.

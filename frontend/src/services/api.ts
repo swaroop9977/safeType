@@ -6,6 +6,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_KEY = process.env.REACT_APP_API_KEY || '';
 
 export interface ScanTextRequest {
   text: string;
@@ -78,12 +79,17 @@ class APIService {
   private client: AxiosInstance;
 
   constructor() {
+    const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (API_KEY) {
+      defaultHeaders['X-API-Key'] = API_KEY;
+    }
+
     this.client = axios.create({
       baseURL: API_BASE_URL,
       timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: defaultHeaders,
     });
   }
 
@@ -102,10 +108,15 @@ class APIService {
       formData.append('image', request.image);
       formData.append('preprocess', request.preprocess ? 'true' : 'false');
 
+      const imageHeaders: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+      };
+      if (API_KEY) {
+        imageHeaders['X-API-Key'] = API_KEY;
+      }
+
       const response = await this.client.post<ScanResponse>('/scan/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: imageHeaders,
       });
 
       return response.data;

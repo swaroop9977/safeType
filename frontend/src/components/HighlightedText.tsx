@@ -14,11 +14,11 @@ interface HighlightedTextProps {
 const HighlightedText: React.FC<HighlightedTextProps> = ({ originalText, highlights }) => {
   const getHighlightClass = (category: string, severity: string): string => {
     if (category === 'pii') {
-      return 'bg-orange-300 dark:bg-orange-600 text-gray-900 dark:text-white border-b-2 border-orange-600 dark:border-orange-400 font-medium';
+      return 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 rounded px-0.5';
     } else if (category === 'phishing') {
-      return 'bg-red-300 dark:bg-red-600 text-gray-900 dark:text-white border-b-2 border-red-600 dark:border-red-400 font-medium';
+      return 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-200 rounded px-0.5';
     } else {
-      return 'bg-blue-300 dark:bg-blue-600 text-gray-900 dark:text-white border-b-2 border-blue-600 dark:border-blue-400 font-medium';
+      return 'bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200 rounded px-0.5';
     }
   };
 
@@ -71,30 +71,30 @@ const HighlightedText: React.FC<HighlightedTextProps> = ({ originalText, highlig
   };
 
   return (
-    <div className="bg-gradient-to-br from-white/95 to-purple-50/95 dark:from-slate-800/95 dark:to-purple-900/95 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-purple-200/50 dark:border-purple-800/50">
-      <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 dark:from-purple-400 dark:to-cyan-400 bg-clip-text text-transparent mb-6">Highlighted Text</h3>
-      
+    <div className="card-3d bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">Highlighted Text</h3>
+
       {/* Legend */}
-      <div className="flex flex-wrap gap-5 mb-6 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></span>
-          <span className="text-gray-700 dark:text-gray-300 font-semibold">PII Data</span>
+      <div className="flex flex-wrap gap-4 mb-4 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 bg-amber-200 dark:bg-amber-800 rounded-sm"></span>
+          <span className="text-gray-500 dark:text-gray-400">PII Data</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-4 h-4 bg-gradient-to-r from-red-400 to-red-600 rounded-full"></span>
-          <span className="text-gray-700 dark:text-gray-300 font-semibold">Phishing Keywords</span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 bg-red-200 dark:bg-red-800 rounded-sm"></span>
+          <span className="text-gray-500 dark:text-gray-400">Phishing Keywords</span>
         </div>
       </div>
 
-      {/* Highlighted Text */}
-      <div className="bg-gradient-to-r from-purple-50 to-cyan-50 dark:from-purple-900/30 dark:to-cyan-900/30 p-6 rounded-2xl border-2 border-purple-200/50 dark:border-purple-800/50">
-        <p className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap text-sm font-medium">
+      {/* Text */}
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-4">
+        <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
           {renderHighlightedText()}
         </p>
       </div>
 
-      <p className="text-xs text-gray-600 dark:text-gray-400 mt-4 font-semibold">
-        🎯 {highlights.length} risky span{highlights.length !== 1 ? 's' : ''} detected
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
+        {highlights.length} risky span{highlights.length !== 1 ? 's' : ''} detected
       </p>
     </div>
   );

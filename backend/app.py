@@ -11,10 +11,13 @@ from flask_cors import CORS
 import logging
 from routes.scan_text import text_bp
 from routes.scan_image import image_bp
+from config import Config
+from middleware.limiter import limiter
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}})
+limiter.init_app(app)
 
 # Configure logging
 logging.basicConfig(
@@ -55,6 +58,11 @@ def status():
 def not_found(error):
     """Handle 404 errors."""
     return jsonify({"error": "Endpoint not found"}), 404
+
+@app.errorhandler(429)
+def rate_limit_exceeded(error):
+    """Handle rate limit errors."""
+    return jsonify({"error": "Rate limit exceeded. Please slow down."}), 429
 
 @app.errorhandler(500)
 def internal_error(error):

@@ -13,6 +13,8 @@ from services.language_detection import LanguageDetector
 from services.risk_engine import RiskEngine
 from services.suggestion_engine import SuggestionEngine
 from utils.highlighter import TextHighlighter
+from middleware.auth import require_api_key
+from middleware.limiter import limiter
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,8 @@ suggestion_engine = SuggestionEngine()
 highlighter = TextHighlighter()
 
 @image_bp.route('/image', methods=['POST'])
+@require_api_key
+@limiter.limit(lambda: f"{Config.RATE_LIMIT} per minute")
 def scan_image():
     """
     Scan image for text content, then analyze for PII and phishing.

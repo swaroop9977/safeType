@@ -47,7 +47,20 @@ class Config:
     NLP_WEIGHT = float(os.getenv('NLP_WEIGHT', '0.4'))
     LOW_RISK_THRESHOLD = float(os.getenv('LOW_RISK_THRESHOLD', '0.3'))
     HIGH_RISK_THRESHOLD = float(os.getenv('HIGH_RISK_THRESHOLD', '0.6'))
-    
+        # CORS allowed origins
+    # Comma-separated list.  Defaults to the React dev server.
+    # In production set e.g.: CORS_ORIGINS=https://yourapp.com
+    CORS_ORIGINS = [
+        o.strip() for o in
+        os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+        if o.strip()
+    ]
+    # API key authentication
+    # Set API_KEY_ENABLED=True and a strong API_KEY value in production.
+    # Defaults to disabled so local dev and the evaluation script keep working.
+    API_KEY_ENABLED = os.getenv('API_KEY_ENABLED', 'False').lower() == 'true'
+    API_KEY = os.getenv('API_KEY', None)
+
     # Privacy settings
     ENABLE_LOGGING = os.getenv('ENABLE_LOGGING', 'False').lower() == 'true'
     STORE_DATA = os.getenv('STORE_DATA', 'False').lower() == 'true'

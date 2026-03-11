@@ -44,85 +44,74 @@ const RiskMeter: React.FC<RiskMeterProps> = ({ riskScore, riskLevel, moduleBreak
   const percentage = Math.round(riskScore * 100);
 
   return (
-    <div className="bg-gradient-to-br from-white/90 to-cyan-50/90 dark:from-slate-800/90 dark:to-cyan-900/90 backdrop-blur-sm rounded-3xl shadow-lg p-8 border border-cyan-200/50 dark:border-cyan-800/50">
+    <div className={`card-3d bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 border-t-4 p-6 ${
+      riskLevel === 'Low' ? 'border-t-emerald-500' :
+      riskLevel === 'Medium' ? 'border-t-amber-500' :
+      'border-t-red-500'
+    }`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">Risk Assessment</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{getRiskIcon(riskLevel)}</span>
-          <span className={`text-2xl font-bold ${
-            riskLevel === 'Low' ? 'text-emerald-600 dark:text-emerald-400' :
-            riskLevel === 'Medium' ? 'text-amber-600 dark:text-amber-400' :
-            'text-rose-600 dark:text-rose-400'
-          }`}>
-            {riskLevel}
-          </span>
-        </div>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Risk Assessment</h3>
+        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+          riskLevel === 'Low' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' :
+          riskLevel === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400' :
+          'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
+        }`}>
+          {riskLevel}
+        </span>
       </div>
 
-      {/* Risk Meter Bar */}
-      <div className="relative mb-8">
-        <div className="w-full h-12 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600 rounded-full overflow-hidden shadow-inner">
+      {/* Risk Bar */}
+      <div className="mb-5">
+        <div className="bar-track w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div
-            className={`h-full bg-gradient-to-r ${getRiskColor(riskLevel)} transition-all duration-700 ease-out flex items-center justify-end pr-6 shadow-lg`}
+            className={`bar-fill h-full transition-all duration-500 rounded-full ${
+              riskLevel === 'Low' ? 'bg-emerald-500' :
+              riskLevel === 'Medium' ? 'bg-amber-500' :
+              'bg-red-500'
+            }`}
             style={{ width: `${percentage}%` }}
-          >
-            <span className="text-white text-sm font-bold drop-shadow-lg">{percentage}%</span>
-          </div>
+          />
         </div>
-
-        {/* Threshold markers */}
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-3 px-2 font-medium">
+        <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1.5">
           <span>Safe</span>
-          <span>Moderate</span>
+          <span>{percentage}%</span>
           <span>Risky</span>
         </div>
       </div>
 
       {/* Module Breakdown */}
-      <div className="space-y-5">
-        <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Detection Modules</h4>
-        
-        {/* PII Score */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Detection Modules</p>
+
         <div>
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-gray-600 dark:text-gray-400 font-medium">PII Detection</span>
-            <span className="font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">{Math.round(moduleBreakdown.pii * 100)}%</span>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-gray-600 dark:text-gray-400">PII Detection</span>
+            <span className="text-gray-700 dark:text-gray-300">{Math.round(moduleBreakdown.pii * 100)}%</span>
           </div>
-          <div className="w-full h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-teal-400 to-teal-600 transition-all duration-500 shadow-md"
-              style={{ width: `${moduleBreakdown.pii * 100}%` }}
-            />
+          <div className="bar-track w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="bar-fill h-full bg-teal-500 transition-all duration-500" style={{ width: `${moduleBreakdown.pii * 100}%` }} />
           </div>
         </div>
 
-        {/* NLP Score */}
         <div>
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Intent Analysis</span>
-            <span className="font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">{Math.round(moduleBreakdown.nlp * 100)}%</span>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-gray-600 dark:text-gray-400">Intent Analysis</span>
+            <span className="text-gray-700 dark:text-gray-300">{Math.round(moduleBreakdown.nlp * 100)}%</span>
           </div>
-          <div className="w-full h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500 shadow-md"
-              style={{ width: `${moduleBreakdown.nlp * 100}%` }}
-            />
+          <div className="bar-track w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="bar-fill h-full bg-blue-500 transition-all duration-500" style={{ width: `${moduleBreakdown.nlp * 100}%` }} />
           </div>
         </div>
 
-        {/* OCR Score (if present) */}
         {moduleBreakdown.ocr > 0 && (
           <div>
-            <div className="flex justify-between text-xs mb-2">
-              <span className="text-gray-600 dark:text-gray-400 font-medium">OCR Analysis</span>
-              <span className="font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">{Math.round(moduleBreakdown.ocr * 100)}%</span>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-gray-600 dark:text-gray-400">OCR Analysis</span>
+              <span className="text-gray-700 dark:text-gray-300">{Math.round(moduleBreakdown.ocr * 100)}%</span>
             </div>
-            <div className="w-full h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
-              <div
-                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500 shadow-md"
-                style={{ width: `${moduleBreakdown.ocr * 100}%` }}
-              />
+            <div className="bar-track w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div className="bar-fill h-full bg-purple-500 transition-all duration-500" style={{ width: `${moduleBreakdown.ocr * 100}%` }} />
             </div>
           </div>
         )}

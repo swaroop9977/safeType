@@ -90,6 +90,18 @@ class PIIRegexDetector:
             r'\b[A-Z]{3}\d{9,11}\b',                         # Insurance member ID
             re.IGNORECASE
         )
+
+        # Indian PAN card number
+        # Format: 5 uppercase letters + 4 digits + 1 uppercase letter (e.g. PVPPS3836H)
+        self.pan_card_pattern = re.compile(
+            r'\b[A-Z]{5}[0-9]{4}[A-Z]\b'
+        )
+
+        # Indian Voter ID (EPIC number)
+        # Format: 3 uppercase letters + 7 digits (e.g. ABC1234567)
+        self.voter_id_pattern = re.compile(
+            r'\b[A-Z]{3}[0-9]{7}\b'
+        )
     
     def detect_pii(self, text: str) -> List[Dict]:
         """
@@ -177,7 +189,17 @@ class PIIRegexDetector:
         detections.extend(self._detect_pattern(
             text, self.medical_id_pattern, "medical_id", confidence=0.85
         ))
-        
+
+        # Indian PAN Card detection
+        detections.extend(self._detect_pattern(
+            text, self.pan_card_pattern, "pan_card", confidence=0.97
+        ))
+
+        # Indian Voter ID detection
+        detections.extend(self._detect_pattern(
+            text, self.voter_id_pattern, "voter_id", confidence=0.80
+        ))
+
         return detections
     
     def _detect_pattern(
