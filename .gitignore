@@ -57,6 +57,7 @@ node_modules/
 
 # Production
 /build
+frontend/build/
 
 # Environment
 .env.local
