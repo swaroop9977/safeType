@@ -114,7 +114,7 @@ class TestSequentialAndPatternData:
 
     def test_valid_credit_card_luhn(self):
         """Valid Luhn check credit card (Visa test card)."""
-        text = "Card: 4532-0151-7384-1234"
+        text = "Card: 4539-5787-6362-1486"
         detections = self.detector.detect_pii(text)
         assert any(d["type"] == "credit_card" for d in detections)
 

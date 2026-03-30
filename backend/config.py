@@ -41,6 +41,14 @@ class Config:
     
     # OCR configuration
     TESSERACT_PATH = os.getenv('TESSERACT_PATH', None)
+    TESSDATA_PATH = os.getenv(
+        'TESSDATA_PATH',
+        os.path.join(os.path.dirname(__file__), 'tessdata')
+    )
+    OCR_LANGUAGE_PRIORITY = [
+        lang.strip() for lang in os.getenv('OCR_LANGUAGE_PRIORITY', 'eng+kan,eng').split(',')
+        if lang.strip()
+    ]
     
     # Risk scoring weights and thresholds
     PII_WEIGHT = float(os.getenv('PII_WEIGHT', '0.6'))

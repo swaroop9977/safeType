@@ -7,20 +7,34 @@ import React from 'react';
 interface HeaderProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
+  onHome?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ darkMode, toggleDarkMode }) => {
+const Header: React.FC<HeaderProps> = ({ darkMode, toggleDarkMode, onHome }) => {
   return (
     <header className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="container mx-auto px-6 py-4 max-w-3xl">
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              SafeType+
-            </h1>
-            <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
-              Privacy Shield
-            </span>
+            {onHome ? (
+              <button
+                onClick={onHome}
+                className="flex items-baseline gap-3 hover:opacity-75 transition-opacity"
+                aria-label="Back to home"
+              >
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">SafeType+</h1>
+                <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">Privacy Shield</span>
+              </button>
+            ) : (
+              <>
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  SafeType+
+                </h1>
+                <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
+                  Privacy Shield
+                </span>
+              </>
+            )}
           </div>
 
           <button

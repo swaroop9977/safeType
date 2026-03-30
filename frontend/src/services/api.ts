@@ -17,6 +17,8 @@ export interface ScanTextRequest {
 export interface ScanImageRequest {
   image: File;
   preprocess?: boolean;
+  signal?: AbortSignal;
+  onUploadProgress?: (progress: number) => void;
 }
 
 export interface PIIDetection {
@@ -117,6 +119,14 @@ class APIService {
 
       const response = await this.client.post<ScanResponse>('/scan/image', formData, {
         headers: imageHeaders,
+        signal: request.signal,
+        onUploadProgress: (event) => {
+          if (!request.onUploadProgress || !event.total) {
+            return;
+          }
+          const progress = Math.round((event.loaded * 100) / event.total);
+          request.onUploadProgress(progress);
+        },
       });
 
       return response.data;
@@ -135,6 +145,10 @@ class APIService {
   }
 
   private handleError(error: any): Error {
+    if (error?.code === 'ERR_CANCELED') {
+      return new Error('Scan cancelled by user.');
+    }
+
     if (error.response) {
       // Server responded with error
       const message = error.response.data?.error || 'Server error occurred';
