@@ -28,33 +28,33 @@ cd backend
 python --version
 
 # If Python 3.10-3.12, use:
-python -m venv venv
+python -m venv .venv
 
 # If you have Python 3.13+ installed, use py launcher to select 3.10:
-py -3.10 -m venv venv
+py -3.10 -m venv .venv
 ```
 
 **macOS/Linux:**
 ```bash
 cd backend
-python3.10 -m venv venv
+python3.10 -m venv .venv
 ```
 
 #### Step 2.2: Activate Virtual Environment
 
 **Windows (PowerShell)**:
 ```powershell
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 **Windows (CMD)**:
 ```cmd
-.\venv\Scripts\activate.bat
+.\.venv\Scripts\activate.bat
 ```
 
 **macOS/Linux**:
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 #### Step 2.3: Install Python Dependencies
@@ -102,14 +102,14 @@ sudo apt-get install tesseract-ocr
 
 1. Copy example configuration:
 ```powershell
-cp .env.example .env
+Copy-Item .env.example .env
 ```
 
 2. Edit `.env` file (use Notepad or VS Code):
 ```env
 # Flask Configuration
 FLASK_ENV=development
-FLASK_DEBUG=True
+FLASK_DEBUG=False
 
 # Tesseract Path (Windows example)
 TESSERACT_PATH=C:\Program Files\Tesseract-OCR\tesseract.exe
@@ -207,15 +207,16 @@ This will:
 ### Frontend Verification
 
 1. Browser should automatically open at `http://localhost:3000`
-2. You should see the SafeType+ interface
-3. Try typing text in the text scanner
-4. After ~1.5 seconds, it should auto-scan
+2. Click any "Get started" / launch button on the landing page
+3. You should see the SafeType+ scanner interface
+4. Try typing text in the text scanner
+5. After ~1.5 seconds, it should auto-scan
 
 ## 5. First Test
 
 ### Test Text Scanning
 
-1. Click "Load Risky Example" button
+1. Click "Risky Example" button
 2. Wait for auto-scan or click "Scan Now"
 3. You should see:
    - Risk meter showing "High" risk
@@ -240,7 +241,7 @@ This will:
 **Issue**: `ModuleNotFoundError: No module named 'flask'`
 - **Solution**: Make sure virtual environment is activated and dependencies are installed
 ```powershell
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -259,7 +260,7 @@ python -m spacy download en_core_web_sm
 **Issue**: Port 5000 already in use
 - **Solution**: Either stop the other service or change port in `app.py`:
 ```python
-app.run(host='0.0.0.0', port=5001, debug=True)
+app.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False)
 ```
 
 ### Frontend Issues
@@ -315,7 +316,8 @@ Dataset format:
 
 ### Backend Development
 
-- Code changes auto-reload if `FLASK_DEBUG=True`
+- Current `app.py` runs with `debug=False` and `use_reloader=False`
+- Restart backend manually after backend code changes
 - Check logs in terminal for debugging
 - Use `logger.debug()` for detailed logging
 

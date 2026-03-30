@@ -18,16 +18,16 @@ Looking forward to collaborating with everyone!
 ### ⚠️ Test Case 2: Medium Risk - Contact Info
 ```
 Thanks for your interest! You can reach me at john.doe@email.com 
-or call me at 555-123-4567 anytime.
+for follow-up details.
 ```
 **Expected Result:**
-- Risk Level: Medium (0.4-0.5)
-- PII Detected: Email, Phone
+- Risk Level: Medium (0.4-0.55)
+- PII Detected: Email
 - Suggestions: Redacted version, guidance
-- Highlights: Email and phone highlighted
+- Highlights: Email highlighted
 
 **Key Demo Points:**
-- Show email and phone highlighted in different colors
+- Show email highlighted clearly
 - Point out the safer suggestions
 - Explain why it's medium vs high risk
 
@@ -36,11 +36,11 @@ or call me at 555-123-4567 anytime.
 ### 🚨 Test Case 3: High Risk - Financial + Phishing
 ```
 URGENT! Your account has been suspended. 
-Please verify your credit card 4532-1508-3406-1234 immediately 
+Please verify your credit card 4111-1111-1111-1111 immediately 
 or contact us at 555-987-6543. Click here now to avoid penalties!
 ```
 **Expected Result:**
-- Risk Level: High (0.7-0.9)
+- Risk Level: High (0.6+)
 - PII Detected: Credit card (Luhn valid), phone
 - Phishing Keywords: URGENT, suspended, immediately, Click here
 - Intent: Suspicious/Phishing
@@ -118,7 +118,7 @@ Office hours: Monday-Friday, 9 AM - 5 PM.
 Name: John Smith
 Email: john.smith@example.com
 Phone: (555) 123-4567
-Credit Card: 4532-1508-3406-1234
+Credit Card: 4111-1111-1111-1111
 ```
 
 **Expected Result:**
@@ -201,11 +201,11 @@ Credit Card: 4532-1508-3406-1234
 
 ### Q: "What about false positives?"
 **Demo:** Type `Call me at 1234567890`
-**Result:** Should detect (valid 10-digit)
-**Answer:** "We use validation like Luhn algorithm for credit cards and sequential digit detection. Configurable thresholds let organizations tune sensitivity."
+**Result:** Should NOT detect as phone (sequential pattern)
+**Answer:** "We use validation checks, including Luhn for credit cards and sequential-pattern rejection for phone numbers. Thresholds are configurable so organizations can tune sensitivity."
 
 ### Q: "Performance at scale?"
-**Answer:** "Current: Academic demo. Production would use Gunicorn workers, Redis caching, and load balancing. Typical response time under 500ms after model warm-up."
+**Answer:** "Current: Academic demo. Production would use Gunicorn workers, Redis caching, and load balancing. After model warm-up, short requests are often sub-second on capable hardware."
 
 ---
 
@@ -259,8 +259,8 @@ risk_score = (pii_score × 0.6) + (nlp_score × 0.4)
 ✅ **4 validation methods** (regex, NER, Luhn, sequential detection)  
 ✅ **4 types of suggestions** (redacted, rewritten, guidance, templates)  
 ✅ **Explainable AI** with module breakdown and confidence intervals  
-✅ **Zero data storage** - complete privacy preservation  
-✅ **Sub-second** response time (after model warmup)  
+✅ **No persistent storage by default** (configurable via environment settings)  
+✅ **Often sub-second** response on short inputs after model warm-up (environment-dependent)  
 
 ---
 

@@ -17,7 +17,7 @@ SafeType+ is a proactive security system that combines multiple AI/ML techniques
 
 ### Tech Stack
 
-**Backend (Python 3.10)**
+**Backend (Python 3.10-3.12)**
 - **Framework**: Flask
 - **NLP**: HuggingFace Transformers (DistilBERT), spaCy NER
 - **OCR/CV**: PyTesseract, OpenCV
@@ -104,20 +104,20 @@ cd backend
 
 **Windows (if you have multiple Python versions):**
 ```powershell
-py -3.10 -m venv venv
-.\venv\Scripts\Activate.ps1
+py -3.10 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 **Windows (single Python 3.10-3.12):**
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 **macOS/Linux:**
 ```bash
-python3.10 -m venv venv
-source venv/bin/activate
+python3.10 -m venv .venv
+source .venv/bin/activate
 ```
 
 3. **Install dependencies**
@@ -137,7 +137,7 @@ python -m spacy download xx_ent_wiki_sm
 
 6. **Configure environment**
 ```powershell
-cp .env.example .env
+Copy-Item .env.example .env
 # Edit .env and set TESSERACT_PATH if needed
 ```
 
@@ -173,6 +173,8 @@ npm start
 
 Frontend will be available at `http://localhost:3000`
 
+On first load, click a `Get started` / launch button on the landing page to open the scanner UI.
+
 ## 🔬 Core Functionality
 
 ### 1. Text Analysis Pipeline
@@ -194,7 +196,7 @@ Frontend will be available at `http://localhost:3000`
 
 ### 2. Image Analysis Pipeline
 
-**Input**: Image file (PNG/JPG)
+**Input**: Image file (PNG/JPG/JPEG/GIF/BMP)
 
 **Processing**:
 1. Image preprocessing (grayscale, threshold, noise reduction)
@@ -344,10 +346,10 @@ Labels: `0` = benign, `1` = phishing/malicious
 
 SafeType+ is built with privacy-first principles:
 
-✅ **No data storage** (unless explicitly enabled in config)  
+✅ **No persistent storage by default** (configurable via environment settings)  
 ✅ **Client-side processing** where possible  
 ✅ **Local model execution**  
-✅ **No external API calls** for core functionality  
+✅ **No external inference API calls** for core functionality  
 ✅ **Transparent processing** with explainable results  
 
 ## 🧪 Testing Examples
@@ -360,7 +362,7 @@ Hi team, let's schedule a meeting for next week.
 ### Risky Text
 ```
 URGENT! Your account has been suspended. 
-Click here to verify your credit card 4532-1234-5678-9010 
+Click here to verify your credit card 4111-1111-1111-1111 
 or call 555-123-4567 immediately!
 ```
 
@@ -391,7 +393,7 @@ STORE_DATA=False
 ## 🔮 Future Enhancements
 
 - [ ] Browser extension integration
-- [ ] Multi-language support
+- [ ] Expand language support (additional languages and locale-specific patterns)
 - [ ] Custom trained phishing models
 - [ ] Real-time collaborative filtering
 - [ ] Advanced OCR with layout analysis
