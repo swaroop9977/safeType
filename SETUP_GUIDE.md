@@ -66,20 +66,37 @@ pip install -r requirements.txt
 
 This will install:
 - Flask (web framework)
-- Transformers (NLP models)
-- spaCy (NER)
+- Transformers (NLP/AI models)
+- spaCy (NER/entity extraction)
 - PyTesseract (OCR)
 - OpenCV (image processing)
 - And all other dependencies
 
-#### Step 2.4: Download spaCy Models
+#### Step 2.4: Initialize AI Models
 
+SafeType+ uses transformer-based AI for intelligent phishing and PII detection. Models are automatically downloaded on first startup, but you can pre-download them:
+
+**Option A: Automatic** (recommended for quick start)
 ```powershell
-python -m spacy download en_core_web_sm
-python -m spacy download xx_ent_wiki_sm
+# Models will download when you first run:
+python app.py
+```
+This will download:
+- DistilBERT (intent classification) ~268 MB
+- spaCy NER (entity extraction) ~40 MB
+- Optional: Multilingual models ~800 MB
+
+**Option B: Pre-download** (for CI/CD or offline environments)
+```powershell
+python setup_models.py
 ```
 
-The multilingual model enables basic NER for non-English text.
+**Option C: English-only** (faster, 300 MB instead of 1.1 GB)
+```powershell
+python setup_models.py --no-multilingual
+```
+
+For complete model setup details, see [MODEL_SETUP.md](MODEL_SETUP.md).
 
 #### Step 2.5: Install Tesseract OCR
 

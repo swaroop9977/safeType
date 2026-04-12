@@ -91,6 +91,10 @@ Click these buttons to test:
 3. Click "Scan Image"
 4. See extracted text and risk analysis!
 
+Tip for better OCR quality:
+- Keep `ocr_mode=accurate` (default) for best extraction quality.
+- Use `ocr_mode=fast` only when you need lower latency.
+
 ## Optional: Install Tesseract (for better OCR)
 
 **Windows**:

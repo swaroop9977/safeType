@@ -28,6 +28,11 @@ SafeType+ is a proactive security system that combines multiple AI/ML techniques
 - **Styling**: Tailwind CSS
 - **HTTP Client**: Axios
 
+**Chromium Extension (Chrome / Brave / Edge)**
+- **Manifest**: Chrome Extension Manifest V3
+- **UI**: Popup + options page
+- **Integration**: Talks to the existing Flask API
+
 ### Project Structure
 
 ```
@@ -83,6 +88,17 @@ safeType+/
             ├── HighlightedText.tsx
             ├── SuggestionsList.tsx
             └── DetectionsSummary.tsx
+
+          └── chrome-extension/     # Manifest V3 extension for Chromium browsers
+            ├── manifest.json
+            ├── background.js
+            ├── contentScript.js
+            ├── popup.html
+            ├── popup.css
+            ├── popup.js
+            ├── options.html
+            ├── options.css
+            └── options.js
 ```
 
 ## 🚀 Getting Started
@@ -125,11 +141,20 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. **Download spaCy models**
+4. **Initialize AI Models** (Automatic or Manual)
+
+**Option A: Automatic** (models download on first startup)
 ```powershell
-python -m spacy download en_core_web_sm
-python -m spacy download xx_ent_wiki_sm
+python app.py
 ```
+The server will download DistilBERT, spaCy NER, and other models on first run.
+
+**Option B: Pre-download** (useful for CI/CD or offline setups)
+```powershell
+python setup_models.py
+```
+
+For detailed model setup, see [MODEL_SETUP.md](MODEL_SETUP.md).
 
 5. **Install Tesseract OCR** (Windows)
 - Download from: https://github.com/UB-Mannheim/tesseract/wiki
@@ -174,6 +199,17 @@ npm start
 Frontend will be available at `http://localhost:3000`
 
 On first load, click a `Get started` / launch button on the landing page to open the scanner UI.
+
+### Browser Extension Setup
+
+The same backend can power both the website and a Chromium extension.
+
+1. **Run the backend** on `http://localhost:5000`.
+2. **Load the extension unpacked** from `frontend/chrome-extension` in Chrome, Brave, or Edge.
+3. **Open the extension options** if your backend URL is different from the default `http://localhost:5000/api`.
+4. **Use the popup** to scan typed text, selected text, or page text.
+
+The website and the extension are separate frontends that share the same API contract, so they can evolve independently without breaking each other.
 
 ## 🔬 Core Functionality
 
@@ -285,6 +321,10 @@ Extract and analyze text from images.
 **Request**: multipart/form-data
 - `image`: Image file
 - `preprocess`: true/false
+- `ocr_mode`: `accurate` (default) or `fast`
+
+`accurate` runs multiple preprocessing and OCR layout combinations for best extraction quality.
+`fast` runs a reduced candidate set for lower latency.
 
 **Response**: Same structure as text scan + OCR data
 

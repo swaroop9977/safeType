@@ -12,6 +12,28 @@ SafeType+ is a multi-layered AI-powered privacy protection system designed with 
 4. **Extensible**: Easy to add new detection methods or models
 5. **Performance-Conscious**: Optimized for real-time analysis
 
+## AI/ML Model Stack
+
+SafeType+ uses state-of-the-art transformer models and NER for intelligent detection:
+
+### Transformer Models (Intent Classification)
+- **English**: `distilbert-base-uncased-finetuned-sst-2-english` (HuggingFace)
+- **Multilingual**: `cardiffnlp/twitter-xlm-roberta-base-sentiment` (Optional)
+- **Purpose**: Detect phishing, social engineering, and malicious intent
+- **Architecture**: Lightweight DistilBERT and XLM-RoBERTa for real-time inference
+
+### Named Entity Recognition (NER)
+- **English**: `en_core_web_sm` (spaCy)
+- **Multilingual**: `xx_ent_wiki_sm` (Optional)
+- **Purpose**: Extract person names, organizations, locations, and entities
+- **Architecture**: Statistical ML model trained on CoNLL+Wikipedia data
+
+### Model Initialization
+- Models are automatically downloaded and cached on first startup
+- Use `python setup_models.py` to pre-download all models
+- Models are loaded lazily once per application instance
+- Falls back gracefully to regex-based detection if models unavailable
+
 ## System Architecture Diagram
 
 ```

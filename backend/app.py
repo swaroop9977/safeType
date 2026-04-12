@@ -13,6 +13,7 @@ from routes.scan_text import text_bp
 from routes.scan_image import image_bp
 from config import Config
 from middleware.limiter import limiter
+from models_init import initialize_models_on_startup
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -25,6 +26,16 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Initialize AI/ML models on startup
+logger.info("Initializing AI models at startup...")
+try:
+    model_status = initialize_models_on_startup(app)
+    if not model_status['success']:
+        logger.warning("⚠️  Some AI models failed to load. Using fallback detection methods.")
+except Exception as e:
+    logger.warning(f"⚠️  Model initialization failed: {e}")
+    logger.warning("System will use fallback detection (regex/keywords only)")
 
 # Register blueprints
 app.register_blueprint(text_bp, url_prefix='/api/scan')
@@ -42,16 +53,23 @@ def health_check():
 @app.route('/api/status')
 def status():
     """Detailed status endpoint."""
+    # Check if AI models are loaded
+    ai_status = "operational"
+    if not model_status.get('success'):
+        ai_status = "degraded (using fallback detection)"
+    
     return jsonify({
         "status": "operational",
+        "ai_models": ai_status,
         "modules": {
             "pii_detection": "ready",
-            "ner": "ready",
-            "nlp_intent": "ready",
+            "ner": "ready" if model_status['models'].get('spacy_en', {}).get('status') == 'loaded' else "fallback",
+            "nlp_intent": "ready" if model_status['models'].get('transformers_en', {}).get('status') == 'loaded' else "fallback",
             "ocr": "ready",
             "risk_engine": "ready",
             "suggestion_engine": "ready"
-        }
+        },
+        "models_loaded": {k: v.get('status') for k, v in model_status['models'].items()}
     }), 200
 
 @app.errorhandler(404)

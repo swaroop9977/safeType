@@ -73,7 +73,8 @@ class OCRService:
     def extract_text_from_image(
         self,
         image_data: bytes,
-        preprocess: bool = True
+        preprocess: bool = True,
+        ocr_mode: str = 'accurate'
     ) -> Dict:
         """
         Extract text from image with OCR.
@@ -106,9 +107,27 @@ class OCRService:
             # Upscale small images — improves OCR accuracy significantly
             opencv_image = self._upscale_image(opencv_image)
 
-            # Preprocess if requested
+            # Correct basic orientation if possible.
+            opencv_image = self._autorotate_image(opencv_image)
+
+            # Build OCR-ready variants. Accurate mode tests more variants; fast mode
+            # keeps latency low with a small candidate set.
+            ocr_mode = (ocr_mode or 'accurate').strip().lower()
+            if ocr_mode not in {'fast', 'accurate'}:
+                ocr_mode = 'accurate'
+
+            image_variants = {'original': opencv_image}
             if preprocess:
-                opencv_image = self._preprocess_multi_strategy(opencv_image)
+                preprocessed = self._build_preprocessed_variants(opencv_image)
+                if ocr_mode == 'accurate':
+                    image_variants.update(preprocessed)
+                else:
+                    # Fast mode uses the strongest baseline preprocessing variant.
+                    preferred_order = ['clahe_otsu', 'adaptive']
+                    for name in preferred_order:
+                        if name in preprocessed:
+                            image_variants[name] = preprocessed[name]
+                            break
 
             # Try multiple OCR language/config combinations and keep the best readable output.
             available_languages = set(pytesseract.get_languages(config=''))
@@ -128,51 +147,79 @@ class OCRService:
 
             # Remove duplicates while preserving order.
             language_candidates = list(dict.fromkeys(language_candidates))
-            config_candidates = ['--oem 3 --psm 6', '--oem 3 --psm 4', '--oem 3 --psm 11']
+            if ocr_mode == 'fast':
+                config_candidates = ['--oem 3 --psm 6']
+                max_attempts = 8
+            else:
+                config_candidates = [
+                    '--oem 3 --psm 6',
+                    '--oem 3 --psm 4',
+                    '--oem 3 --psm 11',
+                    '--oem 3 --psm 3'
+                ]
+                max_attempts = 24
 
             best_result = None
             errors = []
+            attempts = 0
 
-            for lang in language_candidates:
-                for tess_config in config_candidates:
-                    try:
-                        data = pytesseract.image_to_data(
-                            opencv_image,
-                            lang=lang,
-                            config=tess_config,
-                            output_type=pytesseract.Output.DICT
-                        )
-                        text = pytesseract.image_to_string(
-                            opencv_image,
-                            lang=lang,
-                            config=tess_config
-                        )
+            for variant_name, candidate_image in image_variants.items():
+                for lang in language_candidates:
+                    for tess_config in config_candidates:
+                        if attempts >= max_attempts:
+                            break
+                        attempts += 1
 
-                        confidences = self._extract_confidences(data)
-                        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-                        quality_score = self._score_ocr_text(text, avg_confidence)
+                        try:
+                            data = pytesseract.image_to_data(
+                                candidate_image,
+                                lang=lang,
+                                config=tess_config,
+                                output_type=pytesseract.Output.DICT
+                            )
+                            text = pytesseract.image_to_string(
+                                candidate_image,
+                                lang=lang,
+                                config=tess_config
+                            )
 
-                        candidate = {
-                            'text': text,
-                            'data': data,
-                            'avg_confidence': avg_confidence,
-                            'quality_score': quality_score,
-                            'lang': lang,
-                            'tess_config': tess_config,
-                            'confidences': confidences,
-                        }
+                            confidences = self._extract_confidences(data)
+                            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+                            quality_score = self._score_ocr_text(text, avg_confidence)
 
-                        if best_result is None or candidate['quality_score'] > best_result['quality_score']:
-                            best_result = candidate
+                            candidate = {
+                                'text': text,
+                                'data': data,
+                                'avg_confidence': avg_confidence,
+                                'quality_score': quality_score,
+                                'lang': lang,
+                                'tess_config': tess_config,
+                                'variant': variant_name,
+                                'confidences': confidences,
+                            }
 
-                    except TesseractNotFoundError:
-                        raise RuntimeError(
-                            "Tesseract executable not found. Install Tesseract OCR and set TESSERACT_PATH in backend/.env"
-                        )
-                    except Exception as e:
-                        errors.append(f"{lang} {tess_config}: {e}")
-                        logger.debug(f"Tesseract lang={lang}, cfg={tess_config} failed: {e}")
-                        continue
+                            if best_result is None or candidate['quality_score'] > best_result['quality_score']:
+                                best_result = candidate
+
+                            # Early exit for already-high quality output.
+                            if quality_score >= 4.8 and avg_confidence >= 78:
+                                break
+
+                        except TesseractNotFoundError:
+                            raise RuntimeError(
+                                "Tesseract executable not found. Install Tesseract OCR and set TESSERACT_PATH in backend/.env"
+                            )
+                        except Exception as e:
+                            errors.append(f"{variant_name} | {lang} {tess_config}: {e}")
+                            logger.debug(
+                                f"Tesseract variant={variant_name}, lang={lang}, cfg={tess_config} failed: {e}"
+                            )
+                            continue
+
+                    if attempts >= max_attempts:
+                        break
+                if attempts >= max_attempts:
+                    break
 
             if best_result is None:
                 if errors:
@@ -194,7 +241,10 @@ class OCRService:
                     "word_count": len([w for w in best_result['data']['text'] if str(w).strip()]),
                     "low_confidence_words": len([c for c in confidences if c < 60]),
                     "selected_language": best_result['lang'],
-                    "selected_config": best_result['tess_config']
+                    "selected_config": best_result['tess_config'],
+                    "selected_variant": best_result['variant'],
+                    "ocr_mode": ocr_mode,
+                    "attempts": attempts
                 }
             }
         
@@ -247,6 +297,38 @@ class OCRService:
         try:
             import cv2
 
+            candidates = self._build_preprocessed_variants(image)
+
+            if not candidates:
+                return image
+
+            # Pick the strategy that yields the most readable result
+            try:
+                import pytesseract
+                best_img = next(iter(candidates.values()))
+                best_score = -1
+                for name, img in candidates.items():
+                    text = pytesseract.image_to_string(img, config='--oem 3 --psm 6')
+                    score = self._score_ocr_text(text, 0.0)
+                    logger.debug(f"Preprocessing strategy '{name}': score={score:.2f}")
+                    if score > best_score:
+                        best_score = score
+                        best_img = img
+                return best_img
+            except Exception:
+                return next(iter(candidates.values()))
+
+        except Exception as e:
+            logger.warning(f"Error in preprocessing, using original: {e}")
+            return image
+
+    def _build_preprocessed_variants(self, image) -> Dict[str, object]:
+        """
+        Generate a set of preprocessing variants for robust OCR selection.
+        """
+        try:
+            import cv2
+
             candidates = {}
 
             # Strategy 1: CLAHE on grayscale + Otsu
@@ -286,27 +368,64 @@ class OCRService:
             except Exception:
                 pass
 
-            if not candidates:
-                return image
-
-            # Pick the strategy that yields the most words
+            # Strategy 4: Morphological clean-up after Otsu for noisy scans.
             try:
-                import pytesseract
-                best_img = next(iter(candidates.values()))
-                best_score = -1
-                for name, img in candidates.items():
-                    text = pytesseract.image_to_string(img, config='--oem 3 --psm 6')
-                    score = self._score_ocr_text(text, 0.0)
-                    logger.debug(f"Preprocessing strategy '{name}': score={score:.2f}")
-                    if score > best_score:
-                        best_score = score
-                        best_img = img
-                return best_img
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                _, thresh = cv2.threshold(
+                    gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+                )
+                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+                cleaned = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+                candidates['morph_clean'] = cleaned
             except Exception:
-                return next(iter(candidates.values()))
+                pass
+
+            # Try deskew on binary variants.
+            for name, img in list(candidates.items()):
+                try:
+                    deskewed = self._deskew(img)
+                    candidates[f'{name}_deskewed'] = deskewed
+                except Exception:
+                    continue
+
+            return candidates
 
         except Exception as e:
-            logger.warning(f"Error in preprocessing, using original: {e}")
+            logger.warning(f"Error building preprocessing variants: {e}")
+            return {}
+
+    def _autorotate_image(self, image):
+        """
+        Use Tesseract OSD to rotate image to upright orientation when possible.
+        """
+        try:
+            import cv2
+            import pytesseract
+            import re
+
+            osd = pytesseract.image_to_osd(image)
+            match = re.search(r'Rotate:\s+(\d+)', osd)
+            if not match:
+                return image
+
+            rotate = int(match.group(1)) % 360
+            if rotate == 0:
+                return image
+
+            rotate_map = {
+                90: cv2.ROTATE_90_CLOCKWISE,
+                180: cv2.ROTATE_180,
+                270: cv2.ROTATE_90_COUNTERCLOCKWISE,
+            }
+            if rotate in rotate_map:
+                rotated = cv2.rotate(image, rotate_map[rotate])
+                logger.debug(f"Autorotated image by {rotate} degrees based on OSD")
+                return rotated
+
+            return image
+
+        except Exception:
+            # OSD can fail on tiny/noisy images; silently keep original.
             return image
 
     def _extract_confidences(self, data) -> list:

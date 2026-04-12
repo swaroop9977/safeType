@@ -32,7 +32,7 @@ class Config:
     MIN_LANGUAGE_DETECT_CHARS = int(os.getenv('MIN_LANGUAGE_DETECT_CHARS', '20'))
     
     # Multilingual support (can be disabled to avoid large model downloads)
-    ENABLE_MULTILINGUAL = os.getenv('ENABLE_MULTILINGUAL', 'True').lower() == 'true'
+    ENABLE_MULTILINGUAL = os.getenv('ENABLE_MULTILINGUAL', 'False').lower() == 'true'
     MULTILINGUAL_NLP_MODEL = os.getenv(
         'MULTILINGUAL_NLP_MODEL',
         'cardiffnlp/twitter-xlm-roberta-base-sentiment'
@@ -49,6 +49,7 @@ class Config:
         lang.strip() for lang in os.getenv('OCR_LANGUAGE_PRIORITY', 'eng+kan,eng').split(',')
         if lang.strip()
     ]
+    OCR_DEFAULT_MODE = os.getenv('OCR_DEFAULT_MODE', 'accurate').strip().lower()
     
     # Risk scoring weights and thresholds
     PII_WEIGHT = float(os.getenv('PII_WEIGHT', '0.6'))

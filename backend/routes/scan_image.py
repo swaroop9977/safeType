@@ -58,6 +58,7 @@ def scan_image():
     - Content-Type: multipart/form-data
     - Field: image (file)
     - Optional field: preprocess (boolean, default true)
+    - Optional field: ocr_mode ("accurate" or "fast", default from config)
     
     Response JSON:
     {
@@ -106,9 +107,14 @@ def scan_image():
         
         # Get preprocessing option
         preprocess = request.form.get('preprocess', 'true').lower() == 'true'
+        ocr_mode = request.form.get('ocr_mode', Config.OCR_DEFAULT_MODE)
         
         # Step 1: OCR - Extract text from image
-        ocr_result = ocr_service.extract_text_from_image(image_data, preprocess)
+        ocr_result = ocr_service.extract_text_from_image(
+            image_data,
+            preprocess=preprocess,
+            ocr_mode=ocr_mode
+        )
         extracted_text = ocr_result['text']
         ocr_confidence = ocr_result['confidence']
         ocr_error = ocr_result.get('metadata', {}).get('error')

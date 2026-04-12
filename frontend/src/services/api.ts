@@ -117,9 +117,14 @@ class APIService {
         imageHeaders['X-API-Key'] = API_KEY;
       }
 
+      // Increase timeout for image scans (especially with OCR preprocessing)
+      // OCR preprocessing can take 30-60 seconds
+      const timeout = request.preprocess ? 120000 : 60000; // 2 min for preprocessing, 1 min normal
+
       const response = await this.client.post<ScanResponse>('/scan/image', formData, {
         headers: imageHeaders,
         signal: request.signal,
+        timeout: timeout,
         onUploadProgress: (event) => {
           if (!request.onUploadProgress || !event.total) {
             return;
