@@ -195,7 +195,17 @@ class RiskEngine:
             Urgency level: "immediate", "soon", "consider", "none"
         """
         # Check for critical PII
-        critical_keywords = ['credit_card', 'ssn', 'aadhaar', 'financial']
+        critical_keywords = [
+            'credit_card',
+            'ssn',
+            'aadhaar',
+            'pan card',
+            'passport',
+            'voter id',
+            'drivers license',
+            'medical id',
+            'financial'
+        ]
         has_critical = any(
             keyword in reason.lower()
             for reason in reasons

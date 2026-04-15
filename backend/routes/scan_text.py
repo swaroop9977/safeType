@@ -23,10 +23,17 @@ text_bp = Blueprint('text_scan', __name__)
 
 # Initialize services (lazy loading handled in classes)
 pii_regex = PIIRegexDetector()
-pii_ner = PIINERDetector(
-    Config.SPACY_MODEL,
-    Config.MULTILINGUAL_SPACY_MODEL
-)
+
+# Try to initialize NER, but don't fail if it doesn't work
+try:
+    pii_ner = PIINERDetector(
+        Config.SPACY_MODEL,
+        Config.MULTILINGUAL_SPACY_MODEL
+    )
+except Exception as e:
+    logger.warning(f"Could not initialize spaCy NER: {e}. Using regex-only PII detection.")
+    pii_ner = None
+
 nlp_intent = NLPIntentClassifier(
     Config.NLP_MODEL,
     Config.MULTILINGUAL_NLP_MODEL
@@ -104,12 +111,19 @@ def scan_text():
         regex_detections = pii_regex.detect_pii(text)
         logger.debug(f"Regex detected {len(regex_detections)} PII items")
         
-        # Step 3: PII Detection (NER)
-        ner_detections = pii_ner.detect_entities(text, detected_language)
-        logger.debug(f"NER detected {len(ner_detections)} entities")
+        # Step 3: PII Detection (NER) - Optional
+        ner_detections = []
+        if pii_ner is not None:
+            ner_detections = pii_ner.detect_entities(text, detected_language)
+            logger.debug(f"NER detected {len(ner_detections)} entities")
+        else:
+            logger.debug("NER skipped (spaCy not available)")
         
         # Step 4: Combine PII detections
-        all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
+        if pii_ner is not None:
+            all_pii = pii_ner.combine_with_regex(regex_detections, ner_detections)
+        else:
+            all_pii = regex_detections
         logger.debug(f"Combined total: {len(all_pii)} PII items")
         
         # Step 5: NLP Intent Classification

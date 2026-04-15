@@ -31,13 +31,13 @@ cd d:\pilot\safeType+\backend
 
 # Create and activate virtual environment
 # If you have Python 3.10-3.12, use:
-python -m venv venv
+python -m venv .venv
 
 # If you have multiple versions, specify 3.10:
-py -3.10 -m venv venv
+py -3.10 -m venv .venv
 
 # Activate
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt
@@ -47,7 +47,7 @@ python -m spacy download en_core_web_sm
 python -m spacy download xx_ent_wiki_sm
 
 # Create config file
-cp .env.example .env
+Copy-Item .env.example .env
 
 # Start server
 python app.py
@@ -73,15 +73,16 @@ Browser will open automatically at `http://localhost:3000`
 
 ### 3️⃣ Verify Installation
 
-1. Type text in the text box
-2. Wait 1.5 seconds or click "Scan Now"
-3. You should see risk analysis appear!
+1. On the landing page, click any "Get started" / launch button
+2. Type text in the text box
+3. Wait 1.5 seconds or click "Scan Now"
+4. You should see risk analysis appear!
 
 ### 4️⃣ Test with Examples
 
 Click these buttons to test:
-- **"Load Safe Example"** - Should show LOW risk
-- **"Load Risky Example"** - Should show HIGH risk with suggestions
+- **"Safe Example"** - Should show LOW risk
+- **"Risky Example"** - Should show HIGH risk with suggestions
 
 ### 5️⃣ Try Image Scanning
 
@@ -89,6 +90,10 @@ Click these buttons to test:
 2. Upload any screenshot with text
 3. Click "Scan Image"
 4. See extracted text and risk analysis!
+
+Tip for better OCR quality:
+- Keep `ocr_mode=accurate` (default) for best extraction quality.
+- Use `ocr_mode=fast` only when you need lower latency.
 
 ## Optional: Install Tesseract (for better OCR)
 
@@ -142,7 +147,7 @@ Click these buttons to test:
 # Test text scanning
 curl -X POST http://localhost:5000/api/scan/text `
   -H "Content-Type: application/json" `
-  -d '{\"text\": \"My email is test@example.com and phone is 555-1234\"}'
+  -d '{\"text\": \"My email is test@example.com and phone is 555-123-4567\"}'
 ```
 
 ## Need Help?

@@ -17,6 +17,8 @@ export interface ScanTextRequest {
 export interface ScanImageRequest {
   image: File;
   preprocess?: boolean;
+  signal?: AbortSignal;
+  onUploadProgress?: (progress: number) => void;
 }
 
 export interface PIIDetection {
@@ -115,8 +117,21 @@ class APIService {
         imageHeaders['X-API-Key'] = API_KEY;
       }
 
+      // Increase timeout for image scans (especially with OCR preprocessing)
+      // OCR preprocessing can take 30-60 seconds
+      const timeout = request.preprocess ? 120000 : 60000; // 2 min for preprocessing, 1 min normal
+
       const response = await this.client.post<ScanResponse>('/scan/image', formData, {
         headers: imageHeaders,
+        signal: request.signal,
+        timeout: timeout,
+        onUploadProgress: (event) => {
+          if (!request.onUploadProgress || !event.total) {
+            return;
+          }
+          const progress = Math.round((event.loaded * 100) / event.total);
+          request.onUploadProgress(progress);
+        },
       });
 
       return response.data;
@@ -135,6 +150,10 @@ class APIService {
   }
 
   private handleError(error: any): Error {
+    if (error?.code === 'ERR_CANCELED') {
+      return new Error('Scan cancelled by user.');
+    }
+
     if (error.response) {
       // Server responded with error
       const message = error.response.data?.error || 'Server error occurred';

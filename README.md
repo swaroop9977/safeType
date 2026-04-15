@@ -17,7 +17,7 @@ SafeType+ is a proactive security system that combines multiple AI/ML techniques
 
 ### Tech Stack
 
-**Backend (Python 3.10)**
+**Backend (Python 3.10-3.12)**
 - **Framework**: Flask
 - **NLP**: HuggingFace Transformers (DistilBERT), spaCy NER
 - **OCR/CV**: PyTesseract, OpenCV
@@ -27,6 +27,11 @@ SafeType+ is a proactive security system that combines multiple AI/ML techniques
 - **Framework**: React 18 with TypeScript
 - **Styling**: Tailwind CSS
 - **HTTP Client**: Axios
+
+**Chromium Extension (Chrome / Brave / Edge)**
+- **Manifest**: Chrome Extension Manifest V3
+- **UI**: Popup + options page
+- **Integration**: Talks to the existing Flask API
 
 ### Project Structure
 
@@ -83,6 +88,17 @@ safeType+/
             ├── HighlightedText.tsx
             ├── SuggestionsList.tsx
             └── DetectionsSummary.tsx
+
+          └── chrome-extension/     # Manifest V3 extension for Chromium browsers
+            ├── manifest.json
+            ├── background.js
+            ├── contentScript.js
+            ├── popup.html
+            ├── popup.css
+            ├── popup.js
+            ├── options.html
+            ├── options.css
+            └── options.js
 ```
 
 ## 🚀 Getting Started
@@ -104,20 +120,20 @@ cd backend
 
 **Windows (if you have multiple Python versions):**
 ```powershell
-py -3.10 -m venv venv
-.\venv\Scripts\Activate.ps1
+py -3.10 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 **Windows (single Python 3.10-3.12):**
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 **macOS/Linux:**
 ```bash
-python3.10 -m venv venv
-source venv/bin/activate
+python3.10 -m venv .venv
+source .venv/bin/activate
 ```
 
 3. **Install dependencies**
@@ -125,11 +141,20 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. **Download spaCy models**
+4. **Initialize AI Models** (Automatic or Manual)
+
+**Option A: Automatic** (models download on first startup)
 ```powershell
-python -m spacy download en_core_web_sm
-python -m spacy download xx_ent_wiki_sm
+python app.py
 ```
+The server will download DistilBERT, spaCy NER, and other models on first run.
+
+**Option B: Pre-download** (useful for CI/CD or offline setups)
+```powershell
+python setup_models.py
+```
+
+For detailed model setup, see [MODEL_SETUP.md](MODEL_SETUP.md).
 
 5. **Install Tesseract OCR** (Windows)
 - Download from: https://github.com/UB-Mannheim/tesseract/wiki
@@ -137,7 +162,7 @@ python -m spacy download xx_ent_wiki_sm
 
 6. **Configure environment**
 ```powershell
-cp .env.example .env
+Copy-Item .env.example .env
 # Edit .env and set TESSERACT_PATH if needed
 ```
 
@@ -173,6 +198,19 @@ npm start
 
 Frontend will be available at `http://localhost:3000`
 
+On first load, click a `Get started` / launch button on the landing page to open the scanner UI.
+
+### Browser Extension Setup
+
+The same backend can power both the website and a Chromium extension.
+
+1. **Run the backend** on `http://localhost:5000`.
+2. **Load the extension unpacked** from `frontend/chrome-extension` in Chrome, Brave, or Edge.
+3. **Open the extension options** if your backend URL is different from the default `http://localhost:5000/api`.
+4. **Use the popup** to scan typed text, selected text, or page text.
+
+The website and the extension are separate frontends that share the same API contract, so they can evolve independently without breaking each other.
+
 ## 🔬 Core Functionality
 
 ### 1. Text Analysis Pipeline
@@ -194,7 +232,7 @@ Frontend will be available at `http://localhost:3000`
 
 ### 2. Image Analysis Pipeline
 
-**Input**: Image file (PNG/JPG)
+**Input**: Image file (PNG/JPG/JPEG/GIF/BMP)
 
 **Processing**:
 1. Image preprocessing (grayscale, threshold, noise reduction)
@@ -283,6 +321,10 @@ Extract and analyze text from images.
 **Request**: multipart/form-data
 - `image`: Image file
 - `preprocess`: true/false
+- `ocr_mode`: `accurate` (default) or `fast`
+
+`accurate` runs multiple preprocessing and OCR layout combinations for best extraction quality.
+`fast` runs a reduced candidate set for lower latency.
 
 **Response**: Same structure as text scan + OCR data
 
@@ -344,10 +386,10 @@ Labels: `0` = benign, `1` = phishing/malicious
 
 SafeType+ is built with privacy-first principles:
 
-✅ **No data storage** (unless explicitly enabled in config)  
+✅ **No persistent storage by default** (configurable via environment settings)  
 ✅ **Client-side processing** where possible  
 ✅ **Local model execution**  
-✅ **No external API calls** for core functionality  
+✅ **No external inference API calls** for core functionality  
 ✅ **Transparent processing** with explainable results  
 
 ## 🧪 Testing Examples
@@ -360,7 +402,7 @@ Hi team, let's schedule a meeting for next week.
 ### Risky Text
 ```
 URGENT! Your account has been suspended. 
-Click here to verify your credit card 4532-1234-5678-9010 
+Click here to verify your credit card 4111-1111-1111-1111 
 or call 555-123-4567 immediately!
 ```
 
@@ -391,7 +433,7 @@ STORE_DATA=False
 ## 🔮 Future Enhancements
 
 - [ ] Browser extension integration
-- [ ] Multi-language support
+- [ ] Expand language support (additional languages and locale-specific patterns)
 - [ ] Custom trained phishing models
 - [ ] Real-time collaborative filtering
 - [ ] Advanced OCR with layout analysis

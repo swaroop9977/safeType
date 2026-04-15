@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeType+</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <p class="eyebrow">SafeType+</p>
+        <h1>Scan before you send</h1>
+        <p class="subhead">
+          Check selected text or the current page for PII, phishing risk, and safer alternatives.
+        </p>
+      </header>
+
+      <section class="actions">
+        <button id="use-selection" class="secondary">Use selection</button>
+        <button id="use-page" class="secondary">Use page text</button>
+      </section>
+
+      <textarea id="input" rows="8" placeholder="Paste or capture text here"></textarea>
+
+      <section class="actions primary-actions">
+        <button id="scan-text">Scan text</button>
+        <a class="link-button" href="options.html" target="_blank" rel="noreferrer">Settings</a>
+      </section>
+
+      <section id="status" class="status">Ready</section>
+
+      <section id="result" class="result hidden">
+        <div class="risk-card">
+          <div>
+            <p class="label">Risk score</p>
+            <strong id="risk-score">0%</strong>
+          </div>
+          <div>
+            <p class="label">Risk level</p>
+            <strong id="risk-level">Low</strong>
+          </div>
+        </div>
+
+        <div class="section-block">
+          <h2>Reasons</h2>
+          <ul id="reasons"></ul>
+        </div>
+
+        <div class="section-block">
+          <h2>Detected PII</h2>
+          <div id="pii-list" class="chip-list"></div>
+        </div>
+
+        <div class="section-block">
+          <h2>Suggestions</h2>
+          <div id="suggestions"></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

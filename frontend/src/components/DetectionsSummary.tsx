@@ -35,6 +35,8 @@ const DetectionsSummary: React.FC<DetectionsSummaryProps> = ({
       passport: '🛂',
       drivers_license: '🚗',
       medical_id: '🏥',
+      pan_card: '🪪',
+      voter_id: '🗳️',
     };
     return icons[type] || '📄';
   };

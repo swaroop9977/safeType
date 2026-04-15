@@ -15,7 +15,7 @@ Quick reference for troubleshooting SafeType+ setup and runtime issues.
 pip install --user -r requirements.txt
 
 # OR activate virtual environment first
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -55,7 +55,7 @@ netstat -ano | findstr :5000
 taskkill /PID <PID> /F
 
 # Option 2: Change port in app.py
-# Edit app.py line: app.run(host='0.0.0.0', port=5001, debug=True)
+# Edit app.py line: app.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False)
 ```
 
 #### Issue: CORS errors in browser
@@ -65,7 +65,7 @@ taskkill /PID <PID> /F
 1. Verify Flask-CORS is installed: `pip install flask-cors`
 2. Check CORS config in `app.py`:
 ```python
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}})
 ```
 3. Restart backend server
 
@@ -73,16 +73,9 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 **Symptom**: First request takes 10+ seconds
 
 **Solution**:
-- This is normal behavior (models load on first use)
-- Models are cached after first load
-- Subsequent requests will be fast
-- To preload, add to `app.py`:
-```python
-@app.before_first_request
-def preload_models():
-    from services.nlp_intent import nlp_intent
-    nlp_intent.classify_intent("test")
-```
+- Startup and first heavy scan can be slower while models initialize
+- Subsequent requests are typically faster once models are in memory
+- Keep the backend process running between scans to avoid repeated cold starts
 
 #### Issue: Memory errors during processing
 **Error**: `MemoryError` or system freeze
@@ -91,11 +84,7 @@ def preload_models():
 1. Reduce text length limit in routes
 2. Add pagination for large datasets
 3. Increase system RAM
-4. Use smaller model:
-```python
-# In nlp_intent.py
-model_name = "distilbert-base-uncased"  # Smaller variant
-```
+4. Use a lighter NLP configuration in `backend/.env` (for example disable multilingual models)
 
 ### API Errors
 
@@ -120,7 +109,7 @@ model_name = "distilbert-base-uncased"  # Smaller variant
    - Missing model
    - Invalid configuration
    - Malformed input
-3. Enable debug mode in `.env`: `FLASK_DEBUG=True`
+3. If deeper trace details are needed, temporarily run Flask with debug enabled (or adjust `app.py`), then revert to current defaults after troubleshooting.
 
 ## Frontend Issues
 
@@ -194,10 +183,11 @@ REACT_APP_API_URL=http://localhost:5000/api
 
 **Solution**:
 1. Check file size (max 10MB)
-2. Verify file format (PNG, JPG, GIF)
-3. Check browser console for errors
-4. Test with small image first
-5. Verify backend accepts multipart/form-data
+2. Verify file format accepted by backend (PNG, JPG, JPEG, GIF, BMP)
+3. Note: frontend may allow WEBP selection, but backend currently rejects WEBP
+4. Check browser console for errors
+5. Test with small image first
+6. Verify backend accepts multipart/form-data
 
 ## Evaluation Issues
 
@@ -256,7 +246,7 @@ ENABLE_LOGGING=False
 1. Verify DistilBERT model loaded correctly
 2. Check keyword patterns in `nlp_intent.py`
 3. Test with known phishing examples
-4. Adjust scoring weights in `risk_engine.py`
+4. Adjust scoring weights in `backend/.env` (`PII_WEIGHT`, `NLP_WEIGHT`)
 
 #### Issue: Too many false positives
 **Symptom**: Normal text marked as high risk
@@ -296,8 +286,8 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 **Solution**:
 ```bash
-chmod +x venv/bin/activate
-source venv/bin/activate
+chmod +x .venv/bin/activate
+source .venv/bin/activate
 ```
 
 #### Issue: Tesseract not in PATH

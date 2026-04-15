@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the newly added multilingual support and adversarial/edge-case testing capabilities in SafeType+.
+This document describes the current multilingual support and adversarial/edge-case testing capabilities in SafeType+.
 
 ---
 
@@ -13,7 +13,7 @@ This document describes the newly added multilingual support and adversarial/edg
 1. **Language Detection**
    - Automatic language detection using `langdetect` library
    - Configurable minimum character threshold (default: 20 chars)
-   - Fallback to default language (English) for short/ambiguous text
+   - Fallback to default language (English) for short or low-signal text
    - Stable detection with seeded random generator
 
 2. **Multilingual NLP Intent Classification**
@@ -87,9 +87,9 @@ Language detection runs automatically when enabled. The detected language is inc
 |----------|------|---------|--------|-----------|--------|
 | English  | en   | urgent, expire, suspended | winner, prize, free | bank, IRS, police | click here, download |
 | Spanish  | es   | urgente, expira, suspendido | ganador, premio, gratis | banco, gobierno | haz clic, descarga |
-| French   | fr   | urgent, expire, suspendu | gagner, prix, gratuit | banque, police | cliquez ici, téléchargez |
+| French   | fr   | urgent, expire, suspendu | gagnant, prix, gratuit | banque, police | cliquez ici, telechargez |
 | German   | de   | dringend, ablauf, gesperrt | gewinner, preis, gratis | bank, polizei | hier klicken, herunterladen |
-| Portuguese | pt | urgente, expira, suspenso | ganhador, prêmio, grátis | banco, governo | clique aqui, baixar |
+| Portuguese | pt | urgente, expira, suspenso | ganhador, premio, gratis | banco, governo | clique aqui, baixar |
 | Italian  | it   | urgente, scade, sospeso | vincitore, premio, gratis | banca, polizia | clicca qui, scarica |
 
 ---
@@ -123,7 +123,7 @@ Tests invalid patterns that match regex but fail validation:
 - Sequential phone: `1234567890`
 - Repeated digits: `0000000000`
 - Invalid Luhn credit card: `1111-1111-1111-1111`
-- Valid Luhn test card: `4532-0151-7384-1234`
+- Valid Luhn test card: `4539-5787-6362-1486`
 
 **Expected Behavior**: Should filter out invalid patterns using validation checks (Luhn algorithm, sequential detection, etc.)
 
@@ -157,13 +157,14 @@ Tests NER behavior on unusual entity patterns:
 
 ```bash
 # Run all adversarial tests
-pytest backend/tests/test_adversarial_edge_cases.py -v
+cd backend
+PYTHONPATH=. pytest tests/test_adversarial_edge_cases.py -v
 
 # Run specific test class
-pytest backend/tests/test_adversarial_edge_cases.py::TestObfuscatedPII -v
+PYTHONPATH=. pytest tests/test_adversarial_edge_cases.py::TestObfuscatedPII -v
 
 # Run with coverage
-pytest backend/tests/test_adversarial_edge_cases.py --cov=services --cov-report=html
+PYTHONPATH=. pytest tests/test_adversarial_edge_cases.py --cov=services --cov-report=html
 ```
 
 ### Test Results Interpretation
@@ -208,12 +209,13 @@ class TestYourCategory:
 
 3. **Reliability Assessment**
    - Confidence >= 0.6 → reliable
-   - Confidence < 0.6 → unreliable, use default
+   - Confidence < 0.6 → unreliable flag is set
 
 4. **Fallback**
    - Short text → default language
    - Low alpha ratio → default language
    - Detection error → default language
+   - Low-confidence detection still returns detected language with `reliable: false`
 
 ### Model Selection Logic
 
@@ -239,8 +241,9 @@ def _get_language_patterns(self, language: str):
 ## Performance Considerations
 
 1. **Model Loading**
-   - Models are loaded lazily on first use
-   - English models loaded by default
+   - NLP/NER models are initialized during service construction
+   - Route-level service instances are created at module import/startup
+   - Missing model files fall back gracefully to available models/keyword logic
    - Multilingual models only if configured
 
 2. **Language Detection Overhead**

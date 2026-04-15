@@ -12,6 +12,28 @@ SafeType+ is a multi-layered AI-powered privacy protection system designed with 
 4. **Extensible**: Easy to add new detection methods or models
 5. **Performance-Conscious**: Optimized for real-time analysis
 
+## AI/ML Model Stack
+
+SafeType+ uses state-of-the-art transformer models and NER for intelligent detection:
+
+### Transformer Models (Intent Classification)
+- **English**: `distilbert-base-uncased-finetuned-sst-2-english` (HuggingFace)
+- **Multilingual**: `cardiffnlp/twitter-xlm-roberta-base-sentiment` (Optional)
+- **Purpose**: Detect phishing, social engineering, and malicious intent
+- **Architecture**: Lightweight DistilBERT and XLM-RoBERTa for real-time inference
+
+### Named Entity Recognition (NER)
+- **English**: `en_core_web_sm` (spaCy)
+- **Multilingual**: `xx_ent_wiki_sm` (Optional)
+- **Purpose**: Extract person names, organizations, locations, and entities
+- **Architecture**: Statistical ML model trained on CoNLL+Wikipedia data
+
+### Model Initialization
+- Models are automatically downloaded and cached on first startup
+- Use `python setup_models.py` to pre-download all models
+- Models are loaded lazily once per application instance
+- Falls back gracefully to regex-based detection if models unavailable
+
 ## System Architecture Diagram
 
 ```
@@ -274,27 +296,28 @@ risk_score = (combined_pii * 0.6) + (nlp_score * 0.4)
    ↓
 4. Backend Validation
    ↓
-5. Parallel Detection
+5. Sequential Detection Pipeline
+   ├── Language Detection (if enabled)
    ├── Regex PII Detection
    ├── NER Entity Detection
-   └── NLP Intent Classification
+   ├── PII Deduplication (Regex + NER)
+   ├── NLP Intent Classification
+   └── Phishing Keyword Detection
    ↓
-6. PII Deduplication
-   ↓
-7. Risk Score Computation
+6. Risk Score Computation
    ├── PII Score (weighted by severity)
    ├── NLP Score (weighted by intent)
    └── Combined Score (60% PII + 40% NLP)
    ↓
-8. Suggestion Generation (if Medium/High)
+7. Suggestion Generation (if Medium/High)
    ├── Redacted version
    ├── Rewritten version
    ├── Guidance text
    └── Template suggestions
    ↓
-9. Response Formation
+8. Response Formation
    ↓
-10. Frontend Visualization
+9. Frontend Visualization
     ├── Risk Meter
     ├── Highlighted Text
     ├── Suggestions List
@@ -372,7 +395,7 @@ risk_score = (combined_pii * 0.6) + (nlp_score * 0.4)
 - Single-threaded Flask server
 - In-memory model loading
 - No caching layer
-- No rate limiting by default
+- In-memory rate limiting storage (not shared across instances)
 
 ### Production Enhancements
 1. **Server**: Use Gunicorn/uWSGI with workers
@@ -387,8 +410,16 @@ risk_score = (combined_pii * 0.6) + (nlp_score * 0.4)
 ### Current Implementation
 - Input validation (length, format)
 - CORS configuration
+- Per-route rate limiting
+- Optional API key authentication (config-driven)
 - No data persistence by default
 - Client-side sanitization
+
+### Validation & Guardrails
+- Max text length: 10,000 characters (`/api/scan/text`)
+- Request body cap: 16 MB (`MAX_CONTENT_LENGTH`)
+- Image validation cap: 10 MB (`OCRService.validate_image`)
+- Frontend auto-scan triggers after 1.5s and only when text length > 10
 
 ### Production Requirements
 - Authentication (JWT/OAuth)
@@ -400,24 +431,30 @@ risk_score = (combined_pii * 0.6) + (nlp_score * 0.4)
 
 ## Testing Strategy
 
-### Unit Tests (To Be Implemented)
+### Current Unit/Edge Tests
 ```python
-# Example structure
 tests/
-├── test_pii_regex.py
-├── test_pii_ner.py
-├── test_nlp_intent.py
+├── test_adversarial_edge_cases.py
+├── test_document_heuristics.py
+├── test_language_detection.py
+├── test_pii_regex_edge_cases.py
+└── test_text_highlighter_edge_cases.py
+```
+
+### Planned Additional Tests
+```python
+tests/
 ├── test_risk_engine.py
-└── test_suggestion_engine.py
+├── test_suggestion_engine.py
+├── test_api_text.py
+├── test_api_image.py
+└── test_end_to_end.py
 ```
 
 ### Integration Tests
 ```python
-# Example structure
-tests/
-├── test_api_text.py
-├── test_api_image.py
-└── test_end_to_end.py
+# Target areas: route contract validation, auth/limiter middleware behavior,
+# OCR-to-risk pipeline integration, and frontend-backend schema compatibility.
 ```
 
 ### Performance Tests

@@ -1,0 +1,99 @@
+:root {
+  color-scheme: light;
+  --bg: #07111f;
+  --panel: #0e1a2b;
+  --text: #f4f7fb;
+  --muted: #9fb2c9;
+  --accent: #43d3c1;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, Segoe UI, system-ui, sans-serif;
+  color: var(--text);
+  background: linear-gradient(180deg, #08111e 0%, #0a1625 100%);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: min(520px, 100%);
+  background: rgba(12, 22, 36, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.eyebrow,
+.subhead,
+.status {
+  color: var(--muted);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.subhead {
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+input,
+button {
+  font: inherit;
+  border-radius: 12px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(6, 12, 23, 0.8);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button {
+  border: 0;
+  padding: 12px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #06201d;
+  background: linear-gradient(135deg, var(--accent), #9af1e8);
+}
+
+.status {
+  margin-top: 14px;
+  font-size: 13px;
+}

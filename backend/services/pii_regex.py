@@ -1,6 +1,6 @@
 """
 Regex-based PII detection service.
-Identifies common patterns for emails, phones, credit cards, SSN, Aadhaar, etc.
+Identifies common patterns for emails, phones, cards, and identity documents.
 """
 
 import re
@@ -43,7 +43,7 @@ class PIIRegexDetector:
         # Aadhaar pattern (Indian UID)
         # Matches: 1234-5678-9012, 1234 5678 9012, 123456789012
         self.aadhaar_pattern = re.compile(
-            r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'
+            r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}\b(?![-\s]?\d{4})'
         )
         
         # IP Address pattern
@@ -61,22 +61,28 @@ class PIIRegexDetector:
         )
         
         # Passport number patterns
-        # Matches various formats: A1234567, AB1234567, 123456789
-        # US: 9 digits, UK: 9 alphanumeric, India: 8 alphanumeric
+        # Supports broad international formats plus India-specific format.
         self.passport_pattern = re.compile(
-            r'\b[A-Z]{1,2}\d{6,9}\b|'  # Format: A1234567 or AB1234567
-            r'\b\d{9}\b(?![-\s])',      # 9 digits (not followed by more digits)
+            r'\b[A-Z]{1,2}\d{6,9}\b',
             re.IGNORECASE
+        )
+
+        # India passport format: one letter followed by 7 digits (e.g. M1234567)
+        self.india_passport_pattern = re.compile(
+            r'\b[A-PR-WYa-pr-wy][1-9]\d{6}\b'
         )
         
         # Driver's License patterns
-        # US formats vary by state, common patterns included
-        # Matches: A1234567, 12345678, A123-456-789-012, etc.
+        # Includes common formats and India format (SS-RR-NNNNNNNNNNN).
         self.drivers_license_pattern = re.compile(
             r'\b[A-Z]\d{7,8}\b|'                    # Format: A1234567
-            r'\b\d{8,10}\b|'                        # 8-10 digits
             r'\b[A-Z]{1,2}\d{5,7}\b|'              # Format: AB12345
             r'\b[A-Z]\d{3}-\d{3}-\d{3}-\d{3}\b',   # Format: A123-456-789-012
+            re.IGNORECASE
+        )
+
+        self.india_drivers_license_pattern = re.compile(
+            r'\b[A-Z]{2}[-\s]?\d{2}[-\s]?\d{11}\b',
             re.IGNORECASE
         )
         
@@ -94,7 +100,8 @@ class PIIRegexDetector:
         # Indian PAN card number
         # Format: 5 uppercase letters + 4 digits + 1 uppercase letter (e.g. PVPPS3836H)
         self.pan_card_pattern = re.compile(
-            r'\b[A-Z]{5}[0-9]{4}[A-Z]\b'
+            r'\b[A-Z]{5}[0-9]{4}[A-Z]\b',
+            re.IGNORECASE
         )
 
         # Indian Voter ID (EPIC number)
@@ -155,9 +162,14 @@ class PIIRegexDetector:
         ))
         
         # Aadhaar detection
-        detections.extend(self._detect_pattern(
+        aadhaar_matches = self._detect_pattern(
             text, self.aadhaar_pattern, "aadhaar", confidence=0.85
-        ))
+        )
+        aadhaar_matches = [
+            m for m in aadhaar_matches
+            if self._is_valid_aadhaar(m["value"])
+        ]
+        detections.extend(aadhaar_matches)
         
         # IP address detection
         detections.extend(self._detect_pattern(
@@ -173,6 +185,9 @@ class PIIRegexDetector:
         passport_matches = self._detect_pattern(
             text, self.passport_pattern, "passport", confidence=0.8
         )
+        passport_matches.extend(self._detect_pattern(
+            text, self.india_passport_pattern, "passport", confidence=0.9
+        ))
         # Filter to avoid false positives with phone numbers
         passport_matches = [
             m for m in passport_matches
@@ -181,9 +196,17 @@ class PIIRegexDetector:
         detections.extend(passport_matches)
         
         # Driver's License detection
-        detections.extend(self._detect_pattern(
+        dl_matches = self._detect_pattern(
             text, self.drivers_license_pattern, "drivers_license", confidence=0.75
+        )
+        dl_matches.extend(self._detect_pattern(
+            text, self.india_drivers_license_pattern, "drivers_license", confidence=0.9
         ))
+        dl_matches = [
+            m for m in dl_matches
+            if self._is_valid_drivers_license(m["value"])
+        ]
+        detections.extend(dl_matches)
         
         # Medical ID detection
         detections.extend(self._detect_pattern(
@@ -191,16 +214,20 @@ class PIIRegexDetector:
         ))
 
         # Indian PAN Card detection
-        detections.extend(self._detect_pattern(
+        pan_matches = self._detect_pattern(
             text, self.pan_card_pattern, "pan_card", confidence=0.97
-        ))
+        )
+        pan_matches = [m for m in pan_matches if self._is_valid_pan(m["value"])]
+        detections.extend(pan_matches)
 
         # Indian Voter ID detection
-        detections.extend(self._detect_pattern(
+        voter_matches = self._detect_pattern(
             text, self.voter_id_pattern, "voter_id", confidence=0.80
-        ))
+        )
+        voter_matches = [m for m in voter_matches if self._is_valid_voter_id(m["value"])]
+        detections.extend(voter_matches)
 
-        return detections
+        return self._dedupe_detections(detections)
     
     def _detect_pattern(
         self,
@@ -302,12 +329,80 @@ class PIIRegexDetector:
         has_number = any(c.isdigit() for c in clean)
         
         if not (has_letter and has_number):
-            # Exception: Some passports are all numeric (9 digits)
-            if clean.isdigit() and len(clean) == 9:
-                return True
             return False
         
         return True
+
+    def _is_valid_aadhaar(self, aadhaar: str) -> bool:
+        """Validate Aadhaar-like values to reduce false positives."""
+        digits = re.sub(r'\D', '', aadhaar)
+        if not re.fullmatch(r'\d{12}', digits):
+            return False
+
+        # Aadhaar numbers do not start with 0 or 1.
+        if digits[0] in {'0', '1'}:
+            return False
+
+        if len(set(digits)) == 1:
+            return False
+
+        if self._is_sequential(digits):
+            return False
+
+        return True
+
+    def _is_valid_pan(self, pan: str) -> bool:
+        """Validate PAN format and basic quality constraints."""
+        pan_clean = re.sub(r'[^A-Z0-9]', '', pan.upper())
+        if not re.fullmatch(r'[A-Z]{5}[0-9]{4}[A-Z]', pan_clean):
+            return False
+
+        if len(set(pan_clean[:5])) == 1:
+            return False
+
+        return True
+
+    def _is_valid_voter_id(self, voter_id: str) -> bool:
+        """Validate Indian voter ID (EPIC) style values."""
+        voter_clean = re.sub(r'[^A-Z0-9]', '', voter_id.upper())
+        if not re.fullmatch(r'[A-Z]{3}\d{7}', voter_clean):
+            return False
+
+        if len(set(voter_clean[-7:])) == 1:
+            return False
+
+        return True
+
+    def _is_valid_drivers_license(self, license_value: str) -> bool:
+        """Validate common driver's license formats and India DL pattern."""
+        clean = re.sub(r'[^A-Z0-9]', '', license_value.upper())
+
+        patterns = [
+            r'[A-Z]\d{7,8}',
+            r'[A-Z]{1,2}\d{5,7}',
+            r'[A-Z]\d{12}',
+            r'[A-Z]{2}\d{13}'  # India DL format after separator removal
+        ]
+        return any(re.fullmatch(pattern, clean) for pattern in patterns)
+
+    def _dedupe_detections(self, detections: List[Dict]) -> List[Dict]:
+        """Remove duplicate detections that can arise from overlapping patterns."""
+        seen = set()
+        unique = []
+
+        for detection in detections:
+            key = (
+                detection.get("type"),
+                detection.get("start"),
+                detection.get("end"),
+                detection.get("value")
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(detection)
+
+        return unique
     
     def _luhn_check(self, card_number: str) -> bool:
         """

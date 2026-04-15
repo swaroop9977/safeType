@@ -7,10 +7,13 @@ import Header from './components/Header';
 import TextScanner from './components/TextScanner';
 import ImageScanner from './components/ImageScanner';
 import Footer from './components/Footer';
+import LandingPage from './components/LandingPage';
 
 type ScanMode = 'text' | 'image';
+type AppView = 'landing' | 'app';
 
 const App: React.FC = () => {
+  const [view, setView] = useState<AppView>('landing');
   const [scanMode, setScanMode] = useState<ScanMode>('text');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     // Check local storage or system preference
@@ -36,9 +39,19 @@ const App: React.FC = () => {
     setDarkMode(!darkMode);
   };
 
+  if (view === 'landing') {
+    return (
+      <LandingPage
+        onLaunch={() => setView('app')}
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 via-white to-sky-50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950">
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} onHome={() => setView('landing')} />
       
       <main className="flex-grow container mx-auto px-4 py-8 max-w-3xl">
         {/* Mode Selector */}

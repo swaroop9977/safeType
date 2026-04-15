@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -74,4 +78,39 @@ code {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, transparent 65%);
   pointer-events: none;
   border-radius: inherit;
+}
+
+/* ---------- Landing hero floating shapes (neumorphic blobs) ---------- */
+.shape-float {
+  position: absolute;
+  border-radius: 38% 62% 54% 46% / 44% 36% 64% 56%;
+  background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+  box-shadow:
+    8px 8px 20px rgba(0, 0, 0, 0.09),
+    -4px -4px 14px rgba(255, 255, 255, 0.95),
+    inset 2px 2px 6px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+.dark .shape-float {
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  box-shadow:
+    8px 8px 20px rgba(0, 0, 0, 0.5),
+    -4px -4px 14px rgba(255, 255, 255, 0.02),
+    inset 2px 2px 6px rgba(255, 255, 255, 0.03);
+}
+
+/* ---------- Landing step number ---------- */
+.step-num {
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.dark .step-num {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }

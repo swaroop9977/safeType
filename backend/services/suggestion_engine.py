@@ -25,6 +25,11 @@ class SuggestionEngine:
             'credit_card': '[Payment details removed]',
             'ssn': '[SSN removed]',
             'aadhaar': '[Aadhaar removed]',
+            'pan_card': '[PAN removed]',
+            'passport': '[Passport details removed]',
+            'voter_id': '[Voter ID removed]',
+            'drivers_license': '[Driving license removed]',
+            'medical_id': '[Medical ID removed]',
             'person': '[Name removed]',
             'ip_address': '[IP address removed]',
             'date_of_birth': '[Date removed]'
@@ -183,7 +188,7 @@ class SuggestionEngine:
             return self.context_suggestions['payment']
         
         # Identity information
-        if any(dtype['type'] in ['ssn', 'aadhaar', 'date_of_birth'] for dtype in pii_detections):
+        if any(dtype['type'] in ['ssn', 'aadhaar', 'pan_card', 'passport', 'voter_id', 'drivers_license', 'medical_id', 'date_of_birth'] for dtype in pii_detections):
             return self.context_suggestions['identity']
         
         # Personal information
@@ -218,7 +223,7 @@ class SuggestionEngine:
                 "Consider sharing contact details through direct messages or private channels"
             )
         
-        if any(t in pii_types for t in ['credit_card', 'ssn', 'aadhaar']):
+        if any(t in pii_types for t in ['credit_card', 'ssn', 'aadhaar', 'pan_card', 'passport', 'voter_id', 'drivers_license', 'medical_id']):
             guidance_parts.append(
                 "Never share sensitive identity or payment information in public messages"
             )
@@ -266,7 +271,7 @@ class SuggestionEngine:
             }
         
         # Verification template
-        if any(t in pii_types for t in ['ssn', 'aadhaar', 'credit_card']):
+        if any(t in pii_types for t in ['ssn', 'aadhaar', 'pan_card', 'passport', 'voter_id', 'drivers_license', 'medical_id', 'credit_card']):
             return {
                 "type": "template",
                 "text": "Identity verification can be completed through our secure verification system.",
@@ -294,7 +299,7 @@ class SuggestionEngine:
         pii_types = set(d['type'] for d in pii_detections)
         
         # Determine required privacy level
-        if any(t in pii_types for t in ['credit_card', 'ssn', 'aadhaar']):
+        if any(t in pii_types for t in ['credit_card', 'ssn', 'aadhaar', 'pan_card', 'passport', 'voter_id', 'drivers_license', 'medical_id']):
             recommended = "encrypted_direct"
             reason = "Contains highly sensitive identity/payment information"
         elif any(t in pii_types for t in ['email', 'phone', 'person']):
@@ -333,6 +338,11 @@ class SuggestionEngine:
             'credit_card': 'my payment method',
             'ssn': 'my SSN',
             'aadhaar': 'my Aadhaar',
+            'pan_card': 'my PAN',
+            'passport': 'my passport number',
+            'voter_id': 'my voter ID',
+            'drivers_license': 'my driving license',
+            'medical_id': 'my medical ID',
             'person': 'the individual',
             'org': 'the organization',
             'ip_address': 'the IP address'
